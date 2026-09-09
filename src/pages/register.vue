@@ -24,7 +24,7 @@ const handleSubmit = async () => {
   try {
     const response = await API.post('/register', formData.value);
 
-    if (response.data.token) {
+    if (response.data && response.data.token) {
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
     }
@@ -32,7 +32,20 @@ const handleSubmit = async () => {
     alert('Registrasi berhasil! Silakan login.');
     router.push('/login');
   } catch (err) {
-    error.value = err.response?.data?.message || 'Registrasi gagal, periksa kembali data Anda.';
+    // Penanganan error yang lebih aman dan robust di baris 25
+    if (err.response && err.response.data) {
+      if (err.response.data.message) {
+        error.value = err.response.data.message;
+      } else if (err.response.data.errors) {
+        // Ambil error validasi pertama dari Laravel jika ada
+        const firstKey = Object.keys(err.response.data.errors)[0];
+        error.value = err.response.data.errors[firstKey][0];
+      } else {
+        error.value = 'Registrasi gagal, periksa kembali data Anda.';
+      }
+    } else {
+      error.value = 'Terjadi kesalahan koneksi ke server.';
+    }
   } finally {
     loading.value = false;
   }

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { 
   Plus, 
@@ -10,7 +10,9 @@ import {
   Menu, 
   X,
   FolderTree,
-  AlertCircle
+  AlertCircle,
+  Eye,
+  FileText
 } from 'lucide-vue-next';
 import api from '../utils/axios';
 import SidebarAdmin from '../components/SidebarAdmin.vue';
@@ -26,9 +28,14 @@ const adminUser = ref(JSON.parse(localStorage.getItem('user') || '{}'));
 const searchTerm = ref('');
 const isSidebarOpen = ref(false);
 
+// State Modal Form (Tambah/Edit)
 const showModal = ref(false);
 const isEditing = ref(false);
 const currentId = ref(null);
+
+// State Modal Detail (Show)
+const showDetailModal = ref(false);
+const selectedCategory = ref(null);
 
 const form = ref({
   name: '',
@@ -47,12 +54,13 @@ const fetchData = async () => {
   }
 };
 
-const filteredCategories = () => {
+// Penggunaan Computed Property agar lebih reaktif dan efisien
+const filteredCategories = computed(() => {
   if (!searchTerm.value) return categories.value;
   return categories.value.filter(item => 
     item.name && item.name.toLowerCase().includes(searchTerm.value.toLowerCase())
   );
-};
+});
 
 const resetForm = () => {
   form.value = { name: '', description: '' };
@@ -60,6 +68,12 @@ const resetForm = () => {
   currentId.value = null;
   errorMessage.value = '';
   showModal.value = false;
+};
+
+// Buka Modal Detail (Show)
+const openDetailModal = (item) => {
+  selectedCategory.value = item;
+  showDetailModal.value = true;
 };
 
 const openEditModal = (item) => {
@@ -199,13 +213,13 @@ onMounted(() => {
                   </td>
                 </tr>
 
-                <tr v-else-if="filteredCategories().length === 0">
+                <tr v-else-if="filteredCategories.length === 0">
                   <td colspan="3" class="p-12 text-center text-slate-400">
                     Tidak ada kategori yang ditemukan.
                   </td>
                 </tr>
 
-                <tr v-else v-for="item in filteredCategories()" :key="item.id" class="hover:bg-emerald-50/30 transition-colors">
+                <tr v-else v-for="item in filteredCategories" :key="item.id" class="hover:bg-emerald-50/30 transition-colors">
                   <td class="p-4 pl-6 font-bold text-slate-800 flex items-center gap-3">
                     <div class="p-2.5 bg-emerald-100 text-emerald-800 rounded-xl">
                       <FolderTree :size="18" />
@@ -219,15 +233,29 @@ onMounted(() => {
 
                   <td class="p-4 text-center pr-6">
                     <div class="flex items-center justify-center gap-2">
+                      <!-- Tombol Show / Detail -->
+                      <button 
+                        @click="openDetailModal(item)" 
+                        class="bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 p-2 rounded-xl text-xs font-bold transition cursor-pointer shadow-xs"
+                        title="Lihat Detail"
+                      >
+                        <Eye :size="14" />
+                      </button>
+
+                      <!-- Tombol Edit -->
                       <button 
                         @click="openEditModal(item)" 
-                        class="bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 rounded-xl text-xs font-bold transition cursor-pointer shadow-xs"
+                        class="bg-slate-100 hover:bg-amber-50 text-slate-600 hover:text-amber-700 p-2 rounded-xl text-xs font-bold transition cursor-pointer shadow-xs"
+                        title="Edit Kategori"
                       >
                         <Pencil :size="14" />
                       </button>
+
+                      <!-- Tombol Hapus -->
                       <button 
                         @click="handleDelete(item.id)" 
                         class="bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 p-2 rounded-xl text-xs font-bold transition cursor-pointer shadow-xs"
+                        title="Hapus Kategori"
                       >
                         <Trash2 :size="14" />
                       </button>
@@ -253,7 +281,6 @@ onMounted(() => {
           </button>
         </div>
 
-        <!-- Notifikasi Error -->
         <div v-if="errorMessage" class="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2 text-rose-600 text-xs font-bold">
           <AlertCircle :size="16" class="shrink-0" />
           <span>{{ errorMessage }}</span>
@@ -301,5 +328,48 @@ onMounted(() => {
         </form>
       </div>
     </div>
+
+    <!-- Modal Show / Detail Kategori -->
+    <div v-if="showDetailModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+      <div class="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl border border-slate-100 space-y-5">
+        
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <h3 class="font-extrabold text-slate-900 text-base flex items-center gap-2">
+            <FileText :size="18" class="text-emerald-600" /> Detail Kategori
+          </h3>
+          <button @click="showDetailModal = false" class="text-slate-400 hover:text-slate-600 cursor-pointer p-1 rounded-lg hover:bg-slate-100">
+            <X :size="18" />
+          </button>
+        </div>
+
+        <div v-if="selectedCategory" class="space-y-4 text-xs">
+          <div class="bg-emerald-50/60 p-4 rounded-2xl border border-emerald-100/80 flex items-center gap-3">
+            <div class="p-3 bg-emerald-600 text-white rounded-xl shadow-md shadow-emerald-600/20">
+              <FolderTree :size="20" />
+            </div>
+            <div>
+              <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-700">Nama Kategori</span>
+              <h4 class="font-black text-slate-800 text-base">{{ selectedCategory.name }}</h4>
+            </div>
+          </div>
+
+          <div class="space-y-1.5 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Deskripsi</span>
+            <p class="text-slate-600 font-medium leading-relaxed">
+              {{ selectedCategory.description || 'Tidak ada deskripsi yang ditambahkan untuk kategori ini.' }}
+            </p>
+          </div>
+        </div>
+
+        <button 
+          @click="showDetailModal = false"
+          class="w-full bg-slate-900 hover:bg-slate-800 text-white py-2.5 rounded-xl text-xs font-bold transition cursor-pointer"
+        >
+          Tutup
+        </button>
+
+      </div>
+    </div>
+
   </div>
 </template>
