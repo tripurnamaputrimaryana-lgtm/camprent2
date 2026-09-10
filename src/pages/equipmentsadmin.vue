@@ -2,10 +2,11 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { 
-  Plus, Search, Pencil, Trash2, Bell, Menu, X, Boxes, AlertCircle, Image 
+  Plus, Search, Pencil, Trash2, Bell, Menu, X, Boxes, AlertCircle, Image, Eye, FileText
 } from 'lucide-vue-next';
 import api from '../utils/axios';
 import SidebarAdmin from '../components/SidebarAdmin.vue';
+import NavbarAdmin from '../components/navbaradmin.vue';
 
 const router = useRouter();
 
@@ -22,6 +23,8 @@ const isSidebarOpen = ref(false);
 const showModal = ref(false);
 const isEditing = ref(false);
 const currentId = ref(null);
+const showDetailModal = ref(false);
+const selectedEquipment = ref(null);
 
 const form = ref({
   name: '',
@@ -76,6 +79,11 @@ const openEditModal = (item) => {
   };
   errorMessage.value = '';
   showModal.value = true;
+};
+
+const openDetailModal = (item) => {
+  selectedEquipment.value = item;
+  showDetailModal.value = true;
 };
 
 const handleSubmit = async () => {
@@ -145,7 +153,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-emerald-50/40 font-['Plus_Jakarta_Sans',sans-serif] text-slate-800 flex">
+  <div class="min-h-screen bg-[#f4faf6] font-['Plus_Jakarta_Sans',sans-serif] text-slate-800 flex">
     
     <SidebarAdmin 
       :is-open="isSidebarOpen" 
@@ -156,54 +164,42 @@ onMounted(() => {
 
     <div class="flex-1 flex flex-col min-w-0">
       
-      <header class="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-emerald-100/80 px-4 sm:px-8 py-3.5 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <button @click="isSidebarOpen = true" class="lg:hidden p-2 bg-slate-100 rounded-xl text-slate-600 cursor-pointer">
-            <Menu :size="20" />
-          </button>
-          <h2 class="text-lg font-black text-slate-800">Kelola Stok Alat</h2>
-        </div>
-
-        <div class="flex items-center gap-3">
-          <button class="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition relative cursor-pointer">
-            <Bell :size="18" />
-            <span class="absolute top-2 right-2 w-2 h-2 bg-emerald-500 rounded-full"></span>
-          </button>
-        </div>
-      </header>
+      <NavbarAdmin title="Kelola Stok Alat" :admin-user="adminUser" @menu="isSidebarOpen = true" @logout="handleLogout" />
 
       <main class="p-4 sm:p-8 space-y-6 max-w-7xl">
         
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-br from-emerald-100 via-white to-teal-50 rounded-[2rem] border border-emerald-100 p-6 shadow-lg shadow-emerald-900/5">
+          <div class="absolute -right-12 -top-20 w-64 h-64 rounded-full bg-emerald-200/40 blur-3xl"></div>
           <div>
-            <h1 class="text-2xl font-black text-slate-800">Stok Peralatan</h1>
-            <p class="text-xs text-slate-500 font-medium">Kelola daftar alat camping, harga sewa per hari, dan jumlah stok yang tersedia.</p>
+            <span class="relative text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700">Inventory Control</span>
+            <h1 class="relative text-2xl sm:text-3xl font-black text-slate-900 mt-1">Stok Peralatan</h1>
+            <p class="relative text-xs text-slate-600 font-medium mt-1">Kelola alat camping, harga sewa, dan jumlah stok yang tersedia.</p>
           </div>
 
           <button 
             @click="showModal = true"
-            class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 transition shadow-lg shadow-emerald-600/20 cursor-pointer active:scale-95"
+            class="relative bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 transition shadow-lg shadow-emerald-600/20 cursor-pointer active:scale-95"
           >
             <Plus :size="18" /> Tambah Alat
           </button>
         </div>
 
-        <div class="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl shadow-emerald-900/5 border border-white overflow-hidden">
-          <div class="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="bg-white rounded-3xl shadow-xl shadow-emerald-900/5 border border-emerald-100 overflow-hidden">
+          <div class="p-5 sm:p-6 border-b border-emerald-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div class="relative w-full sm:w-80">
               <Search class="absolute left-3.5 top-3 text-slate-400" :size="16" />
               <input 
                 v-model="searchTerm" 
                 type="text" 
                 placeholder="Cari nama alat..." 
-                class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition"
+                class="w-full pl-9 pr-4 py-2.5 bg-emerald-50/40 border border-emerald-100 text-slate-800 placeholder-slate-400 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 focus:bg-white outline-none transition"
               />
             </div>
           </div>
 
           <div class="overflow-x-auto">
             <table class="w-full text-left text-xs">
-              <thead class="bg-slate-50/80 text-slate-400 uppercase font-extrabold tracking-wider border-b border-slate-100">
+              <thead class="bg-emerald-50/60 text-emerald-800/60 uppercase font-extrabold tracking-wider border-b border-emerald-100">
                 <tr>
                   <th class="p-4 pl-6">Nama Alat</th>
                   <th class="p-4">Kategori</th>
@@ -212,7 +208,7 @@ onMounted(() => {
                   <th class="p-4 text-center pr-6">Aksi</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-slate-100 text-slate-700 font-medium">
+              <tbody class="divide-y divide-emerald-50 text-slate-700 font-medium">
                 <tr v-if="loading">
                   <td colspan="5" class="p-12 text-center text-slate-400">
                     <div class="inline-block w-6 h-6 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin mb-2"></div>
@@ -226,11 +222,11 @@ onMounted(() => {
                   </td>
                 </tr>
 
-                <tr v-else v-for="item in filteredEquipments()" :key="item.id" class="hover:bg-emerald-50/30 transition-colors">
+                <tr v-else v-for="item in filteredEquipments()" :key="item.id" class="hover:bg-emerald-50/50 transition-colors">
                   <td class="p-4 pl-6 font-bold text-slate-800 flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center">
+                    <div class="w-11 h-11 rounded-xl bg-emerald-50 border border-emerald-100 overflow-hidden shrink-0 flex items-center justify-center">
                       <img v-if="item.image || item.gambar" :src="item.image || item.gambar" class="w-full h-full object-cover" />
-                      <Image v-else :size="18" class="text-slate-400" />
+                      <Image v-else :size="18" class="text-emerald-400" />
                     </div>
                     <span class="font-extrabold text-sm">{{ item.name || item.title }}</span>
                   </td>
@@ -244,14 +240,23 @@ onMounted(() => {
                   </td>
 
                   <td class="p-4 font-bold text-slate-700">
-                    {{ item.stock || item.stok || 0 }} unit
+                    <span class="inline-flex items-center bg-emerald-50 text-emerald-700 border border-emerald-100 px-2.5 py-1 rounded-lg">
+                      {{ item.stock || item.stok || 0 }} unit
+                    </span>
                   </td>
 
                   <td class="p-4 text-center pr-6">
                     <div class="flex items-center justify-center gap-2">
+                      <button
+                        @click="openDetailModal(item)"
+                        class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-100 p-2 rounded-xl text-xs font-bold transition cursor-pointer shadow-xs"
+                        title="Lihat Detail Alat"
+                      >
+                        <Eye :size="14" />
+                      </button>
                       <button 
                         @click="openEditModal(item)" 
-                        class="bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 rounded-xl text-xs font-bold transition cursor-pointer shadow-xs"
+                        class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-100 p-2 rounded-xl text-xs font-bold transition cursor-pointer shadow-xs"
                       >
                         <Pencil :size="14" />
                       </button>
@@ -271,10 +276,35 @@ onMounted(() => {
       </main>
     </div>
 
+    <!-- Modal Detail Alat -->
+    <div v-if="showDetailModal" class="fixed inset-0 z-50 bg-emerald-950/25 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-white rounded-[2rem] w-full max-w-lg p-6 shadow-2xl shadow-emerald-950/15 border border-emerald-100 space-y-5">
+        <div class="flex items-center justify-between border-b border-emerald-100 pb-3">
+          <h3 class="font-extrabold text-slate-900 text-base flex items-center gap-2"><FileText :size="18" class="text-emerald-600" /> Detail Peralatan</h3>
+          <button @click="showDetailModal = false" class="text-slate-400 hover:text-slate-600 cursor-pointer"><X :size="18" /></button>
+        </div>
+        <div v-if="selectedEquipment" class="space-y-4 text-xs">
+          <div class="flex items-center gap-4 bg-emerald-50/60 p-4 rounded-2xl border border-emerald-100">
+            <div class="w-20 h-20 rounded-2xl overflow-hidden bg-white border border-emerald-100 shrink-0 flex items-center justify-center">
+              <img v-if="selectedEquipment.image || selectedEquipment.gambar" :src="selectedEquipment.image || selectedEquipment.gambar" class="w-full h-full object-cover" />
+              <Image v-else :size="24" class="text-emerald-400" />
+            </div>
+            <div><span class="text-[10px] font-bold uppercase tracking-wider text-emerald-700">Nama Alat</span><h4 class="font-black text-slate-800 text-base">{{ selectedEquipment.name || selectedEquipment.title }}</h4><p class="text-emerald-700 font-bold mt-1">{{ selectedEquipment.category?.name || 'Umum' }}</p></div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="bg-emerald-50/60 p-3 rounded-2xl border border-emerald-100"><span class="text-[10px] font-bold uppercase text-slate-400">Harga / Hari</span><p class="font-black text-emerald-700 mt-1">Rp {{ Number(selectedEquipment.price_per_day || selectedEquipment.price || selectedEquipment.harga || 0).toLocaleString('id-ID') }}</p></div>
+            <div class="bg-emerald-50/60 p-3 rounded-2xl border border-emerald-100"><span class="text-[10px] font-bold uppercase text-slate-400">Stok</span><p class="font-black text-slate-800 mt-1">{{ selectedEquipment.stock || selectedEquipment.stok || 0 }} unit</p></div>
+          </div>
+          <div class="bg-emerald-50/60 p-4 rounded-2xl border border-emerald-100"><span class="text-[10px] font-bold uppercase text-slate-400">Deskripsi</span><p class="text-slate-600 leading-relaxed mt-1">{{ selectedEquipment.description || selectedEquipment.deskripsi || 'Tidak ada deskripsi.' }}</p></div>
+        </div>
+        <button @click="showDetailModal = false" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl text-xs font-bold shadow-md shadow-emerald-600/20">Tutup</button>
+      </div>
+    </div>
+
     <!-- Modal Form Tambah/Edit Alat -->
-    <div v-if="showModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-      <div class="bg-white rounded-3xl w-full max-w-lg p-6 shadow-2xl border border-slate-100 space-y-5 max-h-[90vh] overflow-y-auto">
-        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+    <div v-if="showModal" class="fixed inset-0 z-50 bg-emerald-950/25 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-white rounded-[2rem] w-full max-w-lg p-6 shadow-2xl shadow-emerald-950/15 border border-emerald-100 space-y-5 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between border-b border-emerald-100 pb-3">
           <h3 class="font-black text-slate-800 text-base">
             {{ isEditing ? 'Edit Peralatan' : 'Tambah Peralatan Baru' }}
           </h3>
@@ -296,7 +326,7 @@ onMounted(() => {
               type="text" 
               required 
               placeholder="Contoh: Tenda Arpenaz 4.1" 
-              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none"
+              class="w-full px-3.5 py-2.5 bg-emerald-50/40 border border-emerald-100 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 focus:bg-white outline-none"
             />
           </div>
 
@@ -306,7 +336,7 @@ onMounted(() => {
               <select 
                 v-model="form.category_id" 
                 required 
-                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none"
+                class="w-full px-3.5 py-2.5 bg-emerald-50/40 border border-emerald-100 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 focus:bg-white outline-none"
               >
                 <option value="" disabled>Pilih Kategori</option>
                 <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
@@ -320,7 +350,7 @@ onMounted(() => {
                 type="number" 
                 required 
                 placeholder="10" 
-                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none"
+                class="w-full px-3.5 py-2.5 bg-emerald-50/40 border border-emerald-100 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 focus:bg-white outline-none"
               />
             </div>
           </div>
@@ -332,7 +362,7 @@ onMounted(() => {
               type="number" 
               required 
               placeholder="50000" 
-              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none"
+              class="w-full px-3.5 py-2.5 bg-emerald-50/40 border border-emerald-100 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 focus:bg-white outline-none"
             />
           </div>
 
@@ -342,7 +372,7 @@ onMounted(() => {
               v-model="form.image" 
               type="text" 
               placeholder="https://images.unsplash.com/..." 
-              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none"
+              class="w-full px-3.5 py-2.5 bg-emerald-50/40 border border-emerald-100 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 focus:bg-white outline-none"
             />
           </div>
 
@@ -360,7 +390,7 @@ onMounted(() => {
             <button 
               type="button" 
               @click="resetForm" 
-              class="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-600 text-xs font-bold hover:bg-slate-200 transition cursor-pointer"
+              class="px-4 py-2.5 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-bold hover:bg-emerald-100 transition cursor-pointer"
             >
               Batal
             </button>

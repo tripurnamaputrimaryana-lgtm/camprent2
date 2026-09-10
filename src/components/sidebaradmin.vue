@@ -101,20 +101,6 @@ const emit = defineEmits(['close', 'logout']);
             <ChevronRight :size="14" class="opacity-0 group-hover:opacity-100 transition-opacity" />
           </router-link>
 
-          <!-- Kelola Stok Alat -->
-          <router-link 
-            to="/equipmentsadmin"
-            exact-active-class="bg-emerald-600 !text-white shadow-md shadow-emerald-600/20 font-extrabold"
-            class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-slate-600 hover:bg-emerald-50/80 hover:text-emerald-700 font-bold text-xs transition-all group cursor-pointer"
-            @click="emit('close')"
-          >
-            <div class="flex items-center gap-2.5">
-              <Boxes :size="18" />
-              <span>Kelola Stok Alat</span>
-            </div>
-            <ChevronRight :size="14" class="opacity-0 group-hover:opacity-100 transition-opacity" />
-          </router-link>
-
           <!-- Kategori Alat -->
           <router-link 
             to="/categoriesadmin"
@@ -129,6 +115,34 @@ const emit = defineEmits(['close', 'logout']);
             <ChevronRight :size="14" class="opacity-0 group-hover:opacity-100 transition-opacity" />
           </router-link>
 
+          <!-- Data Pelanggan (Diarahkan ke /useradmin tanpa s) -->
+          <router-link 
+            to="/useradmin"
+            exact-active-class="bg-emerald-600 !text-white shadow-md shadow-emerald-600/20 font-extrabold"
+            class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-slate-600 hover:bg-emerald-50/80 hover:text-emerald-700 font-bold text-xs transition-all group cursor-pointer"
+            @click="emit('close')"
+          >
+            <div class="flex items-center gap-2.5">
+              <Users :size="18" />
+              <span>Data Pelanggan</span>
+            </div>
+            <ChevronRight :size="14" class="opacity-0 group-hover:opacity-100 transition-opacity" />
+          </router-link>
+
+          <!-- Kelola Stok Alat -->
+          <router-link 
+            to="/equipmentsadmin"
+            exact-active-class="bg-emerald-600 !text-white shadow-md shadow-emerald-600/20 font-extrabold"
+            class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-slate-600 hover:bg-emerald-50/80 hover:text-emerald-700 font-bold text-xs transition-all group cursor-pointer"
+            @click="emit('close')"
+          >
+            <div class="flex items-center gap-2.5">
+              <Boxes :size="18" />
+              <span>Kelola Stok Alat</span>
+            </div>
+            <ChevronRight :size="14" class="opacity-0 group-hover:opacity-100 transition-opacity" />
+          </router-link>
+
           <!-- Transaksi Sewa -->
           <router-link 
             to="/rentaladmin"
@@ -139,20 +153,6 @@ const emit = defineEmits(['close', 'logout']);
             <div class="flex items-center gap-2.5">
               <ShoppingBag :size="18" />
               <span>Transaksi Sewa</span>
-            </div>
-            <ChevronRight :size="14" class="opacity-0 group-hover:opacity-100 transition-opacity" />
-          </router-link>
-
-          <!-- Data Pelanggan -->
-          <router-link 
-            to="/usersadmin"
-            exact-active-class="bg-emerald-600 !text-white shadow-md shadow-emerald-600/20 font-extrabold"
-            class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-slate-600 hover:bg-emerald-50/80 hover:text-emerald-700 font-bold text-xs transition-all group cursor-pointer"
-            @click="emit('close')"
-          >
-            <div class="flex items-center gap-2.5">
-              <Users :size="18" />
-              <span>Data Pelanggan</span>
             </div>
             <ChevronRight :size="14" class="opacity-0 group-hover:opacity-100 transition-opacity" />
           </router-link>
@@ -175,20 +175,6 @@ const emit = defineEmits(['close', 'logout']);
           <p class="text-[10px] font-black uppercase tracking-wider text-slate-400 px-3 pt-5 mb-2">
             Akses Publik & Pengaturan
           </p>
-
-          <!-- Lihat Katalog Publik -->
-          <router-link 
-            to="/catalog"
-            exact-active-class="bg-emerald-600 !text-white shadow-md shadow-emerald-600/20 font-extrabold"
-            class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-slate-600 hover:bg-emerald-50/80 hover:text-emerald-700 font-bold text-xs transition-all group cursor-pointer"
-            @click="emit('close')"
-          >
-            <div class="flex items-center gap-2.5">
-              <Sparkles :size="18" class="text-amber-500" />
-              <span>Halaman Katalog</span>
-            </div>
-            <ChevronRight :size="14" class="opacity-0 group-hover:opacity-100 transition-opacity" />
-          </router-link>
 
           <!-- Pengaturan -->
           <router-link 

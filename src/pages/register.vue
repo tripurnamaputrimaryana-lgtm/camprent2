@@ -53,7 +53,7 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <div class="min-h-screen flex bg-emerald-50/40 font-['Plus_Jakarta_Sans',sans-serif] overflow-hidden">
+  <div class="min-h-screen flex bg-[#f4faf6] font-['Plus_Jakarta_Sans',sans-serif] overflow-hidden">
     <!-- Banner Kiri (Gambar Cerah Bergerak + Gradient Overlay) -->
     <div class="hidden lg:flex lg:w-7/12 relative items-center justify-center overflow-hidden">
       <!-- Background Image Bergerak (Pan Animation) -->
@@ -63,7 +63,7 @@ const handleSubmit = async () => {
       ></div>
 
       <!-- Overlay Tint Hijau Alam & Putih Cerah -->
-      <div class="absolute inset-0 bg-gradient-to-tr from-emerald-900/60 via-emerald-800/30 to-white/10 backdrop-blur-[2px]"></div>
+      <div class="absolute inset-0 bg-gradient-to-tr from-emerald-950/60 via-emerald-800/35 to-emerald-100/10 backdrop-blur-[1px]"></div>
 
       <!-- Brand Content Sisi Kiri -->
       <div class="relative z-10 p-12 text-white max-w-xl flex flex-col justify-between h-full py-16">
@@ -105,8 +105,8 @@ const handleSubmit = async () => {
     </div>
 
     <!-- Sisi Kanan: Form Pendaftaran (Bright Clean Glassmorphic) -->
-    <div class="w-full lg:w-5/12 flex items-center justify-center p-6 sm:p-10 bg-gradient-to-br from-white via-emerald-50/30 to-emerald-100/20 relative">
-      <div class="w-full max-w-md space-y-6 bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-2xl shadow-emerald-900/10 border border-white">
+    <div class="w-full lg:w-5/12 flex items-center justify-center p-6 sm:p-10 bg-gradient-to-br from-white via-emerald-50/40 to-teal-50/50 relative">
+      <div class="w-full max-w-md space-y-6 bg-white/90 backdrop-blur-xl p-8 rounded-[2rem] shadow-2xl shadow-emerald-900/10 border border-emerald-100">
         
         <!-- Logo Mobile -->
         <div class="flex items-center gap-2 text-emerald-700 lg:hidden mb-2">
@@ -135,7 +135,7 @@ const handleSubmit = async () => {
                 type="text"
                 required
                 placeholder="Nama Lengkap Kamu"
-                class="w-full pl-10 pr-4 py-2.5 bg-slate-50/80 border border-slate-200 text-slate-800 placeholder-slate-400 rounded-xl text-sm font-medium focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 focus:bg-white outline-none transition-all duration-200 shadow-sm"
+                class="w-full pl-10 pr-4 py-2.5 bg-emerald-50/40 border border-emerald-100 text-slate-800 placeholder-slate-400 rounded-xl text-sm font-medium focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 focus:bg-white outline-none transition-all duration-200 shadow-sm"
               />
             </div>
           </div>
@@ -150,7 +150,7 @@ const handleSubmit = async () => {
                 type="tel"
                 required
                 placeholder="081234567890"
-                class="w-full pl-10 pr-4 py-2.5 bg-slate-50/80 border border-slate-200 text-slate-800 placeholder-slate-400 rounded-xl text-sm font-medium focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 focus:bg-white outline-none transition-all duration-200 shadow-sm"
+                class="w-full pl-10 pr-4 py-2.5 bg-emerald-50/40 border border-emerald-100 text-slate-800 placeholder-slate-400 rounded-xl text-sm font-medium focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 focus:bg-white outline-none transition-all duration-200 shadow-sm"
               />
             </div>
           </div>
@@ -165,7 +165,7 @@ const handleSubmit = async () => {
                 type="email"
                 required
                 placeholder="nama@email.com"
-                class="w-full pl-10 pr-4 py-2.5 bg-slate-50/80 border border-slate-200 text-slate-800 placeholder-slate-400 rounded-xl text-sm font-medium focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 focus:bg-white outline-none transition-all duration-200 shadow-sm"
+                class="w-full pl-10 pr-4 py-2.5 bg-emerald-50/40 border border-emerald-100 text-slate-800 placeholder-slate-400 rounded-xl text-sm font-medium focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 focus:bg-white outline-none transition-all duration-200 shadow-sm"
               />
             </div>
           </div>
@@ -180,7 +180,7 @@ const handleSubmit = async () => {
                 type="password"
                 required
                 placeholder="••••••••"
-                class="w-full pl-10 pr-4 py-2.5 bg-slate-50/80 border border-slate-200 text-slate-800 placeholder-slate-400 rounded-xl text-sm font-medium focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 focus:bg-white outline-none transition-all duration-200 shadow-sm"
+                class="w-full pl-10 pr-4 py-2.5 bg-emerald-50/40 border border-emerald-100 text-slate-800 placeholder-slate-400 rounded-xl text-sm font-medium focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 focus:bg-white outline-none transition-all duration-200 shadow-sm"
               />
             </div>
           </div>
