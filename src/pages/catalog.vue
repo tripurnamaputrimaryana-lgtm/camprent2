@@ -4,7 +4,8 @@ import { useRouter, useRoute } from 'vue-router';
 import API from '../utils/axios';
 import Navbar from '../components/navbar.vue';
 import Footer from '../components/footer.vue';
-import { ShoppingBag, CheckCircle2, XCircle, Search, Filter } from 'lucide-vue-next';
+import { ShoppingBag, CheckCircle2, XCircle, Search, Filter, ShoppingCart } from 'lucide-vue-next';
+import { useCart } from '../utils/cart';
 
 const router = useRouter();
 const route = useRoute();
@@ -13,6 +14,7 @@ const categories = ref([]);
 const selectedCategory = ref(route.query.category_id ? String(route.query.category_id) : '');
 const searchQuery = ref('');
 const loading = ref(true);
+const { addToCart, cartCount } = useCart();
 
 // Ambil data kategori dan peralatan dari API
 const fetchData = async () => {
@@ -56,16 +58,28 @@ const selectCategory = (catId) => {
   selectedCategory.value = catId;
 };
 
-const handleSewaClick = (item) => {
+const handleAddToCart = (item) => {
   const token = localStorage.getItem('token');
   if (!token) {
     alert('Silakan login atau daftar terlebih dahulu untuk melakukan penyewaan alat!');
     router.push('/login');
     return;
   }
-  // Arahkan ke halaman rental/checkout dengan membawa id item (atau sesuai kebutuhan projectmu)
+  addToCart(item);
+  alert(`${item.name || item.title} ditambahkan ke keranjang.`);
+};
+
+const handleRentNow = (item) => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    alert('Silakan login atau daftar terlebih dahulu untuk melakukan penyewaan alat!');
+    router.push('/login');
+    return;
+  }
   router.push({ path: '/rental', query: { equipment_id: item.id } });
 };
+
+const openCart = () => router.push('/cart');
 
 onMounted(() => {
   fetchData();
@@ -92,7 +106,7 @@ onMounted(() => {
               <p class="text-sm text-slate-600 mt-2 max-w-xl">Pilih perlengkapan camping terbaik untuk membuat perjalananmu lebih nyaman dan siap menghadapi alam.</p>
             </div>
           
-            <div class="relative z-10 w-full md:w-80">
+            <div class="relative z-10 w-full md:w-80 flex gap-2">
             <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
               <Search :size="16" />
             </span>
@@ -102,6 +116,9 @@ onMounted(() => {
               placeholder="Cari alat..." 
               class="w-full bg-white/90 border border-emerald-100 rounded-2xl pl-10 pr-4 py-3 text-xs text-slate-800 focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition shadow-sm"
             />
+            <button @click="openCart" class="shrink-0 bg-emerald-600 text-white rounded-2xl px-3 flex items-center gap-1.5 text-xs font-bold cursor-pointer" aria-label="Buka keranjang">
+              <ShoppingCart :size="16" /> <span>{{ cartCount }}</span>
+            </button>
           </div>
           </div>
         </div>
@@ -230,15 +247,31 @@ onMounted(() => {
                   </div>
                 </div>
 
-                <!-- Tombol Sewa -->
+                <!-- Tombol Sewa Langsung dan Keranjang -->
                 <div class="p-5 pt-0">
+                  <div v-if="(item.stock || item.stok || 0) > 0" class="grid grid-cols-2 gap-2">
+                    <button
+                      @click="handleRentNow(item)"
+                      class="bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-2xl flex items-center justify-center gap-1.5 text-[11px] font-bold transition-all shadow-md shadow-emerald-600/20 cursor-pointer"
+                    >
+                      <ShoppingBag :size="14" />
+                      <span>Sewa Sekarang</span>
+                    </button>
+                    <button
+                      @click="handleAddToCart(item)"
+                      class="bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-200 py-3 rounded-2xl flex items-center justify-center gap-1.5 text-[11px] font-bold transition-all cursor-pointer"
+                    >
+                      <ShoppingCart :size="14" />
+                      <span>Keranjang</span>
+                    </button>
+                  </div>
                   <button
-                    :disabled="(item.stock || item.stok || 0) <= 0"
-                    @click="handleSewaClick(item)"
-                    class="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white py-3 rounded-2xl flex items-center justify-center gap-2 text-xs font-bold transition-all shadow-md shadow-emerald-600/20 cursor-pointer"
+                    v-else
+                    disabled
+                    class="w-full bg-slate-200 text-slate-400 py-3 rounded-2xl flex items-center justify-center gap-2 text-xs font-bold cursor-not-allowed"
                   >
-                    <ShoppingBag :size="14" />
-                    <span>{{ (item.stock || item.stok || 0) > 0 ? 'Sewa Sekarang' : 'Tidak Tersedia' }}</span>
+                    <XCircle :size="14" />
+                    <span>Tidak Tersedia</span>
                   </button>
                 </div>
               </div>

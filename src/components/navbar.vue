@@ -1,11 +1,14 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { Tent, LogOut, History, LogIn, UserPlus } from 'lucide-vue-next';
+import { Tent, LogOut, History, LogIn, UserPlus, ShoppingCart, ChevronDown, Mail, Phone } from 'lucide-vue-next';
+import { useCart } from '../utils/cart';
 
 const router = useRouter();
 const user = ref(null);
 const isLoggedIn = ref(false);
+const isProfileOpen = ref(false);
+const { cartCount } = useCart();
 
 onMounted(() => {
   const token = localStorage.getItem('token');
@@ -27,7 +30,12 @@ const handleLogout = () => {
   localStorage.removeItem('user');
   isLoggedIn.value = false;
   user.value = null;
+  isProfileOpen.value = false;
   router.push('/');
+};
+
+const toggleProfile = () => {
+  isProfileOpen.value = !isProfileOpen.value;
 };
 
 const handleHistoryClick = (e) => {
@@ -40,31 +48,31 @@ const handleHistoryClick = (e) => {
 </script>
 
 <template>
-  <nav class="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-emerald-100/80 shadow-sm">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center gap-4">
+  <nav class="sticky top-0 z-50 bg-[#fbfefc]/90 backdrop-blur-xl border-b border-emerald-100/80 shadow-[0_8px_30px_-20px_rgba(6,78,59,0.45)]">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex justify-between items-center gap-4">
       
       <!-- Brand Logo -->
-      <router-link to="/catalog" class="flex items-center gap-3 group cursor-pointer shrink-0">
-        <div class="relative bg-gradient-to-tr from-emerald-600 to-teal-500 p-2.5 rounded-2xl text-white shadow-md shadow-emerald-600/20 group-hover:scale-105 transition-transform">
+      <router-link to="/catalog" class="flex items-center gap-2.5 group cursor-pointer shrink-0">
+        <div class="relative bg-gradient-to-tr from-emerald-600 to-teal-500 p-2.5 rounded-[0.9rem] text-white shadow-md shadow-emerald-600/20 group-hover:rotate-3 group-hover:scale-105 transition-transform">
           <Tent :size="22" class="stroke-[2.5]" />
           <span class="absolute -right-1 -top-1 w-2.5 h-2.5 rounded-full bg-lime-300 border-2 border-white"></span>
         </div>
         <div class="flex flex-col">
-          <span class="text-xl font-black tracking-tight bg-gradient-to-r from-emerald-800 to-teal-600 bg-clip-text text-transparent">
+          <span class="text-lg sm:text-xl font-black tracking-tight bg-gradient-to-r from-emerald-800 to-teal-600 bg-clip-text text-transparent">
             CampRent
           </span>
-          <span class="text-[10px] font-bold text-emerald-600/70 tracking-wider uppercase -mt-1">Outdoor Gear</span>
+          <span class="hidden sm:block text-[9px] font-bold text-emerald-600/70 tracking-[0.16em] uppercase -mt-1">Outdoor Gear</span>
         </div>
       </router-link>
 
       <!-- Navigation Links & Auth State -->
-      <div class="flex items-center gap-1.5 sm:gap-2 bg-emerald-50/70 border border-emerald-100 rounded-2xl p-1.5">
+      <div class="flex items-center gap-1 sm:gap-1.5 bg-emerald-50/70 border border-emerald-100 rounded-[1.1rem] p-1">
         
         <!-- KONDISI 1: JIKA BELUM LOGIN (Sebagai Tamu) -->
         <template v-if="!isLoggedIn">
           <router-link 
             to="/login" 
-            class="px-3.5 py-2 rounded-xl text-xs font-bold text-emerald-700 bg-white hover:bg-emerald-100 border border-emerald-100 transition flex items-center gap-1.5 shadow-sm"
+            class="px-3 py-2 rounded-[0.85rem] text-xs font-bold text-emerald-700 bg-white hover:bg-emerald-100 border border-emerald-100 transition flex items-center gap-1.5 shadow-sm"
           >
             <LogIn :size="15" />
             <span>Masuk</span>
@@ -72,7 +80,7 @@ const handleHistoryClick = (e) => {
 
           <router-link 
             to="/register" 
-            class="px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition flex items-center gap-1.5 shadow-md shadow-emerald-600/20"
+            class="px-3 py-2 rounded-[0.85rem] text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition flex items-center gap-1.5 shadow-md shadow-emerald-600/20"
           >
             <UserPlus :size="15" />
             <span class="hidden sm:inline">Daftar</span>
@@ -85,20 +93,68 @@ const handleHistoryClick = (e) => {
           <router-link 
             to="/history" 
             @click="handleHistoryClick"
-            class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-emerald-700 hover:bg-white transition"
+            class="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-[0.85rem] text-xs font-bold text-slate-600 hover:text-emerald-700 hover:bg-white transition"
           >
             <History :size="16" />
             <span class="hidden sm:inline">Riwayat Sewa</span>
           </router-link>
 
-          <div class="hidden sm:flex items-center gap-2 text-xs font-semibold text-slate-600 bg-white px-3.5 py-2 rounded-xl border border-emerald-100 shadow-sm">
-            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span>Halo, <strong class="text-emerald-700 font-bold">{{ user?.name || 'Petualang' }}</strong></span>
+          <router-link
+            to="/cart"
+            active-class="bg-white text-emerald-700 shadow-sm"
+            class="relative flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-[0.85rem] text-xs font-bold text-slate-600 hover:text-emerald-700 hover:bg-white transition"
+            aria-label="Buka keranjang"
+          >
+            <ShoppingCart :size="16" />
+            <span class="hidden sm:inline">Keranjang</span>
+            <span class="min-w-4 h-4 px-1 rounded-full bg-emerald-600 text-white text-[9px] flex items-center justify-center font-black">{{ cartCount }}</span>
+          </router-link>
+
+          <div class="relative">
+            <button
+              type="button"
+              @click="toggleProfile"
+              class="flex items-center gap-2 text-xs font-semibold text-slate-600 bg-white px-2 sm:px-3 py-2 rounded-[0.85rem] border border-emerald-100 shadow-sm hover:border-emerald-300 transition cursor-pointer"
+              :aria-expanded="isProfileOpen"
+              aria-label="Lihat data diri"
+            >
+              <span class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-black">
+                {{ user?.name?.charAt(0)?.toUpperCase() || 'P' }}
+              </span>
+              <span class="hidden sm:inline">Halo, <strong class="text-emerald-700 font-bold">{{ user?.name || 'Petualang' }}</strong></span>
+              <ChevronDown :size="15" class="text-emerald-600 transition-transform" :class="{ 'rotate-180': isProfileOpen }" />
+            </button>
+
+            <div
+              v-if="isProfileOpen"
+              class="absolute right-0 top-full mt-2 w-72 max-w-[calc(100vw-2rem)] bg-white border border-emerald-100 rounded-2xl shadow-xl shadow-emerald-900/10 p-4 z-50"
+            >
+              <div class="flex items-center gap-3 pb-3 border-b border-slate-100">
+                <div class="w-11 h-11 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-lg font-black">
+                  {{ user?.name?.charAt(0)?.toUpperCase() || 'P' }}
+                </div>
+                <div class="min-w-0">
+                  <p class="font-black text-slate-800 truncate">{{ user?.name || 'Petualang' }}</p>
+                  <p class="text-[11px] text-emerald-600 font-bold uppercase tracking-wider">{{ user?.role || 'user' }}</p>
+                </div>
+              </div>
+
+              <div class="space-y-3 pt-3 text-xs">
+                <div class="flex items-center gap-2.5 text-slate-600">
+                  <Mail :size="16" class="text-emerald-600 shrink-0" />
+                  <span class="truncate">{{ user?.email || 'Email belum tersedia' }}</span>
+                </div>
+                <div class="flex items-center gap-2.5 text-slate-600">
+                  <Phone :size="16" class="text-emerald-600 shrink-0" />
+                  <span>{{ user?.phone_number || 'Nomor telepon belum tersedia' }}</span>
+                </div>
+              </div>
+            </div>
           </div>
 
           <button
             @click="handleLogout"
-            class="bg-white hover:bg-rose-50 text-rose-600 border border-rose-100 px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 shadow-sm"
+            class="bg-white hover:bg-rose-50 text-rose-600 border border-rose-100 px-2.5 sm:px-3.5 py-2 rounded-[0.85rem] text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 shadow-sm"
           >
             <LogOut :size="15" />
             <span class="hidden sm:inline">Keluar</span>

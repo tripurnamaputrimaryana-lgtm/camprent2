@@ -9,11 +9,13 @@ import {
   Sparkles,
   ArrowLeft,
   ShieldCheck,
-  Check
+  Check,
+  PackageCheck
 } from 'lucide-vue-next';
 import API from '../utils/axios';
 import Navbar from '../components/navbar.vue';
 import Footer from '../components/footer.vue';
+import { useCart } from '../utils/cart';
 
 const router = useRouter();
 const route = useRoute();
@@ -25,6 +27,8 @@ const startDate = ref('');
 const endDate = ref('');
 const quantity = ref(1);
 const note = ref('');
+const { cartItems, clearCart } = useCart();
+const rentalItemCount = computed(() => cartItems.value.reduce((total, item) => total + item.quantity, 0));
 
 // State Loading & Alert
 const loading = ref(true);
@@ -67,7 +71,11 @@ const rentalDays = computed(() => {
 
 // Hitung total harga
 const totalPrice = computed(() => {
-  if (!selectedEquipment.value || rentalDays.value <= 0) return 0;
+  if (rentalDays.value <= 0) return 0;
+  if (cartItems.value.length > 0) {
+    return cartItems.value.reduce((total, item) => total + item.price * item.quantity, 0) * rentalDays.value;
+  }
+  if (!selectedEquipment.value) return 0;
   const pricePerDay = Number(selectedEquipment.value.price_per_day || selectedEquipment.value.price || selectedEquipment.value.harga || 0);
   return pricePerDay * rentalDays.value * quantity.value;
 });
@@ -83,7 +91,7 @@ const handleSubmitRental = async () => {
   errorMessage.value = '';
   successMessage.value = '';
 
-  if (!selectedEquipmentId.value) {
+  if (!selectedEquipmentId.value && cartItems.value.length === 0) {
     errorMessage.value = 'Pilih peralatan yang ingin disewa.';
     return;
   }
@@ -102,13 +110,11 @@ const handleSubmitRental = async () => {
 
   submitting.value = true;
   try {
+    const items = cartItems.value.length > 0
+      ? cartItems.value.map((item) => ({ equipment_id: Number(item.id), qty: Number(item.quantity) }))
+      : [{ equipment_id: Number(selectedEquipmentId.value), qty: Number(quantity.value) }];
     const payload = {
-      items: [
-        {
-          equipment_id: Number(selectedEquipmentId.value),
-          qty: Number(quantity.value),
-        },
-      ],
+      items,
       equipment_id: selectedEquipmentId.value,
       start_date: startDate.value,
       end_date: endDate.value,
@@ -118,6 +124,7 @@ const handleSubmitRental = async () => {
     };
 
     await API.post('/rentals', payload);
+    clearCart();
     successMessage.value = 'Pengajuan sewa berhasil dibuat!';
 
     setTimeout(() => {
@@ -142,33 +149,33 @@ onMounted(() => {
 
     <main class="flex-1 flex flex-col min-w-0">
       
-      <header class="relative overflow-hidden bg-gradient-to-br from-emerald-50 via-white to-teal-50 border-b border-emerald-100">
-        <div class="absolute -right-16 -top-20 w-72 h-72 rounded-full bg-emerald-100/60 blur-3xl"></div>
-        <div class="absolute left-1/3 -bottom-24 w-64 h-64 rounded-full bg-teal-100/50 blur-3xl"></div>
+      <header class="relative overflow-hidden bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-800 border-b border-emerald-800 text-white">
+        <div class="absolute -right-16 -top-20 w-72 h-72 rounded-full bg-emerald-400/20 blur-3xl"></div>
+        <div class="absolute left-1/3 -bottom-24 w-64 h-64 rounded-full bg-teal-300/15 blur-3xl"></div>
         <div class="relative max-w-6xl mx-auto px-5 sm:px-8 py-10 sm:py-14">
           <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-7">
             <div class="max-w-2xl space-y-3">
-              <div class="inline-flex items-center gap-2 text-emerald-700 text-[10px] font-black uppercase tracking-[0.2em]">
-                <span class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_12px_rgba(52,211,153,0.55)]"></span>
-                CampRent Booking
+              <div class="inline-flex items-center gap-2 text-emerald-200 text-[10px] font-black uppercase tracking-[0.2em]">
+                <span class="w-2 h-2 rounded-full bg-lime-300 shadow-[0_0_12px_rgba(190,242,100,0.8)]"></span>
+                Checkout Rental
               </div>
-              <h1 class="text-3xl sm:text-4xl font-black tracking-tight text-slate-900">Siapkan perlengkapan untuk petualanganmu.</h1>
-              <p class="text-sm text-slate-600 leading-relaxed max-w-xl">Pilih tanggal dan jumlah unit. Kami akan menghitung total biaya sewamu secara otomatis.</p>
+              <h1 class="text-3xl sm:text-4xl font-black tracking-tight text-white">Siapkan petualanganmu.</h1>
+              <p class="text-sm text-emerald-100 leading-relaxed max-w-xl">Atur jadwal sewa dan periksa kembali perlengkapanmu sebelum pesanan dikirim.</p>
             </div>
 
             <button 
               @click="router.push('/catalog')" 
-              class="self-start sm:self-auto bg-white hover:bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition cursor-pointer shadow-sm"
+              class="self-start sm:self-auto bg-white/10 hover:bg-white/20 border border-white/20 text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition cursor-pointer"
             >
               <ArrowLeft :size="15" /> Kembali ke katalog
             </button>
           </div>
 
-          <div class="flex items-center gap-2 mt-8 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-            <span class="flex items-center gap-1.5 text-emerald-700"><span class="flex w-5 h-5 items-center justify-center rounded-full bg-emerald-500 text-white"><Check :size="12" /></span> Pilih alat</span>
-            <span class="w-8 h-px bg-emerald-200"></span>
-            <span class="flex items-center gap-1.5 text-emerald-800"><span class="flex w-5 h-5 items-center justify-center rounded-full border-2 border-emerald-500 text-emerald-700">2</span> Atur sewa</span>
-            <span class="w-8 h-px bg-emerald-200"></span>
+          <div class="flex items-center gap-2 mt-8 text-[10px] font-bold text-emerald-200 uppercase tracking-wider">
+            <span class="flex items-center gap-1.5 text-lime-200"><span class="flex w-5 h-5 items-center justify-center rounded-full bg-lime-300 text-emerald-950"><Check :size="12" /></span> Pilih alat</span>
+            <span class="w-8 h-px bg-white/25"></span>
+            <span class="flex items-center gap-1.5 text-white"><span class="flex w-5 h-5 items-center justify-center rounded-full border-2 border-lime-300 text-lime-200">2</span> Atur sewa</span>
+            <span class="w-8 h-px bg-white/25"></span>
             <span>Konfirmasi</span>
           </div>
         </div>
@@ -178,12 +185,17 @@ onMounted(() => {
       <div class="p-4 sm:p-8 max-w-6xl mx-auto w-full space-y-6">
         
         <!-- Header Title -->
-        <div class="space-y-1">
-          <span class="inline-flex items-center gap-1.5 bg-white text-emerald-800 px-3 py-1 rounded-full text-xs font-bold border border-emerald-100 shadow-sm">
-            <Sparkles :size="14" class="text-emerald-600" /> Transaksi Sewa
+        <div class="flex items-end justify-between gap-4">
+          <div class="space-y-1">
+          <span class="inline-flex items-center gap-1.5 text-emerald-700 text-[10px] font-black uppercase tracking-[0.18em]">
+            <Sparkles :size="14" class="text-emerald-600" /> Detail Pesanan
           </span>
-          <h2 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Sewa Peralatan Outdoor</h2>
-          <p class="text-sm text-slate-500">Lengkapi detail peminjamanmu dengan santai. Semua biaya akan tampil transparan.</p>
+          <h2 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Atur detail sewa</h2>
+          <p class="text-sm text-slate-500">Tanggal yang sama akan diterapkan ke semua perlengkapan di keranjang.</p>
+          </div>
+          <div class="hidden sm:flex items-center gap-2 bg-white border border-emerald-100 rounded-xl px-3 py-2 text-xs font-bold text-emerald-700 shadow-sm">
+            <PackageCheck :size="16" /> {{ rentalItemCount }} unit
+          </div>
         </div>
 
         <!-- Alert Notification -->
@@ -207,8 +219,17 @@ onMounted(() => {
           <!-- Form Left -->
           <div class="lg:col-span-7 bg-white p-6 sm:p-8 rounded-[1.75rem] border border-emerald-100 shadow-[0_18px_50px_-30px_rgba(16,185,129,0.35)] space-y-6">
             
-            <!-- Select Equipment -->
-            <div>
+            <!-- Daftar Equipment -->
+            <div v-if="cartItems.length > 0">
+              <label class="block text-xs font-bold text-emerald-900 uppercase tracking-wider mb-2">Perlengkapan yang Disewa</label>
+              <div class="space-y-2">
+                <div v-for="item in cartItems" :key="item.id" class="flex justify-between items-center bg-emerald-50/60 border border-emerald-100 rounded-xl px-3 py-2.5 text-xs">
+                  <span class="font-bold text-slate-700">{{ item.name }} <span class="text-emerald-700">x{{ item.quantity }}</span></span>
+                  <span class="font-black text-emerald-700">Rp {{ (item.price * item.quantity).toLocaleString('id-ID') }}</span>
+                </div>
+              </div>
+            </div>
+            <div v-else>
               <label class="block text-xs font-bold text-emerald-900 uppercase tracking-wider mb-2">
                 Peralatan Camping
               </label>
@@ -254,7 +275,7 @@ onMounted(() => {
             </div>
 
             <!-- Unit Quantity -->
-            <div>
+            <div v-if="cartItems.length === 0">
               <label class="block text-xs font-bold text-emerald-900 uppercase tracking-wider mb-2">
                 Jumlah Unit
               </label>
@@ -308,7 +329,16 @@ onMounted(() => {
             </h3>
 
             <!-- Item Card Preview -->
-            <div v-if="selectedEquipment" class="flex gap-3.5 items-center bg-emerald-50/70 p-3 rounded-2xl border border-emerald-100">
+            <div v-if="cartItems.length > 0" class="space-y-2">
+              <div v-for="item in cartItems" :key="item.id" class="flex gap-3.5 items-center bg-emerald-50/70 p-3 rounded-2xl border border-emerald-100">
+                <img :src="getImageUrl(item.image)" :alt="item.name" class="w-14 h-14 rounded-xl object-cover bg-emerald-100 shrink-0" />
+                <div class="space-y-0.5 min-w-0">
+                  <h4 class="font-bold text-slate-800 text-xs truncate">{{ item.name }} x{{ item.quantity }}</h4>
+                  <p class="text-xs text-emerald-700 font-black">Rp {{ (item.price * item.quantity).toLocaleString('id-ID') }}</p>
+                </div>
+              </div>
+            </div>
+            <div v-else-if="selectedEquipment" class="flex gap-3.5 items-center bg-emerald-50/70 p-3 rounded-2xl border border-emerald-100">
               <img
                 :src="getImageUrl(selectedEquipment.image || selectedEquipment.gambar)"
                 :alt="selectedEquipment.name"
@@ -328,21 +358,21 @@ onMounted(() => {
             <!-- Fee Calculation -->
             <div class="space-y-2.5 text-xs font-medium border-b border-emerald-100 pb-4">
               <div class="flex justify-between text-slate-500">
-                <span>Durasi Sewa</span>
+                <span>Durasi sewa</span>
                 <span class="font-bold text-slate-800 flex items-center gap-1">
                   <Clock :size="13" class="text-emerald-600" /> {{ rentalDays }} Hari
                 </span>
               </div>
 
               <div class="flex justify-between text-slate-500">
-                <span>Jumlah Unit</span>
-                <span class="font-bold text-slate-800">{{ quantity }} Unit</span>
+                <span>Total unit</span>
+                <span class="font-bold text-slate-800">{{ cartItems.length > 0 ? cartItems.reduce((sum, item) => sum + item.quantity, 0) : quantity }} Unit</span>
               </div>
             </div>
 
             <!-- Total Output -->
             <div class="bg-gradient-to-br from-emerald-100 to-teal-100 p-4 rounded-2xl border border-emerald-200 space-y-1 text-emerald-950">
-              <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-800/70">Total Biaya</span>
+              <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-800/70">Estimasi total biaya</span>
               <div class="text-2xl font-black text-emerald-900 tracking-tight">
                 Rp {{ totalPrice.toLocaleString('id-ID') }}
               </div>
@@ -351,11 +381,11 @@ onMounted(() => {
             <!-- Submit Button -->
             <button
               @click="handleSubmitRental"
-              :disabled="submitting || rentalDays <= 0 || !selectedEquipment"
+              :disabled="submitting || rentalDays <= 0 || (!selectedEquipment && cartItems.length === 0)"
               class="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white py-3.5 rounded-xl flex items-center justify-center gap-2 text-xs font-bold transition shadow-lg shadow-emerald-600/20 active:scale-98 cursor-pointer"
             >
               <ShieldCheck :size="15" />
-              <span>{{ submitting ? 'Memproses...' : 'Proses & Simpan Transaksi' }}</span>
+              <span>{{ submitting ? 'Mengirim pesanan...' : 'Konfirmasi & Ajukan Sewa' }}</span>
             </button>
           </div>
 

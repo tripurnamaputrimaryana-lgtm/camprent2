@@ -13,6 +13,7 @@ import CategoriesAdmin from '../pages/categoriesadmin.vue';
 import RentalAdmin from '../pages/rentaladmin.vue';
 import UserAdmin from '../pages/useradmin.vue';
 import ReportsAdmin from '../pages/reportsadmin.vue';
+import Cart from '../pages/cart.vue';
 
 import Navbar from '../components/navbar.vue';
 import Footer from '../components/footer.vue';
@@ -30,6 +31,7 @@ const routes = [
   // Rute User yang butuh login
   { path: '/rental', component: Rental, meta: { requiresAuth: true } },
   { path: '/history', component: History, meta: { requiresAuth: true } },
+  { path: '/cart', component: Cart, meta: { requiresAuth: true } },
   
   // Rute Khusus Admin
   { path: '/dashboardadmin', component: DashboardAdmin, meta: { requiresAuth: true, requiresAdmin: true } },
