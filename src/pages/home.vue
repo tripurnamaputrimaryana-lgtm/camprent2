@@ -29,7 +29,7 @@ const fetchEquipments = async () => {
 };
 
 const getImageUrl = (imagePath) => {
-  if (!imagePath) return 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&q=80';
+  if (!imagePath) return 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&q=80&fm=webp';
   if (imagePath.startsWith('http')) return imagePath;
   return `http://localhost:8000/storage/${imagePath}`;
 };
@@ -67,7 +67,7 @@ onMounted(() => {
         <!-- Background Image dengan Overlay Terang -->
         <div class="absolute inset-0 z-0">
           <img 
-            src="https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&q=80" 
+            src="https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&q=80&fm=webp" 
             alt="Camping Outdoor" 
             class="w-full h-full object-cover opacity-35 scale-105"
           />
@@ -238,7 +238,7 @@ onMounted(() => {
                   :src="getImageUrl(item.image || item.gambar)"
                   :alt="item.name || item.title"
                   class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                  @error="$event.target.src = 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&q=80'"
+                  @error="$event.target.src = 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&q=80&fm=webp'"
                 />
                 <div class="absolute inset-0 bg-emerald-950/0 group-hover:bg-emerald-950/15 transition-colors flex items-center justify-center">
                   <span class="opacity-0 group-hover:opacity-100 bg-white/95 text-emerald-900 text-xs font-bold px-4 py-2 rounded-full shadow-lg transition-all transform scale-95 group-hover:scale-100">

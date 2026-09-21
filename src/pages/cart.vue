@@ -12,7 +12,7 @@ const totalItemsPrice = computed(() => cartItems.value.reduce((total, item) => t
 const totalProductTypes = computed(() => cartItems.value.length);
 
 const getImageUrl = (imagePath) => {
-  if (!imagePath) return 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&q=80';
+  if (!imagePath) return 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&q=80&fm=webp';
   if (imagePath.startsWith('http')) return imagePath;
   return `http://localhost:8000/storage/${imagePath}`;
 };

@@ -16,6 +16,7 @@ import API from '../utils/axios';
 import Navbar from '../components/navbar.vue';
 import Footer from '../components/footer.vue';
 import { useCart } from '../utils/cart';
+import { addAdminNotification } from '../utils/notifications';
 
 const router = useRouter();
 const route = useRoute();
@@ -81,7 +82,7 @@ const totalPrice = computed(() => {
 });
 
 const getImageUrl = (imagePath) => {
-  if (!imagePath) return 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&q=80';
+  if (!imagePath) return 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&q=80&fm=webp';
   if (imagePath.startsWith('http')) return imagePath;
   return `http://localhost:8000/storage/${imagePath}`;
 };
@@ -124,6 +125,11 @@ const handleSubmitRental = async () => {
     };
 
     await API.post('/rentals', payload);
+    addAdminNotification({
+      title: 'Transaksi baru',
+      message: `Ada pesanan baru untuk ${selectedEquipment.value?.name || 'alat'} dengan total Rp ${Number(totalPrice.value).toLocaleString('id-ID')}.`,
+      type: 'info'
+    });
     clearCart();
     successMessage.value = 'Pengajuan sewa berhasil dibuat!';
 

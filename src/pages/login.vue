@@ -57,7 +57,7 @@ const handleSubmit = async () => {
       <!-- Background Image Bergerak (Pan Animation) -->
       <div 
         class="absolute inset-0 bg-cover bg-center animate-pan-bg scale-105"
-        style="background-image: url('https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&q=80');"
+        style="background-image: url('https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&q=80&fm=webp');"
       ></div>
 
       <!-- Overlay Tint Hijau Alam & Putih Cerah -->

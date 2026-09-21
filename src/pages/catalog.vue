@@ -35,7 +35,7 @@ const fetchData = async () => {
 };
 
 const getImageUrl = (imagePath) => {
-  if (!imagePath) return 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&q=80';
+  if (!imagePath) return 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&q=80&fm=webp';
   if (imagePath.startsWith('http')) return imagePath;
   return `http://localhost:8000/storage/${imagePath}`;
 };
@@ -211,7 +211,7 @@ onMounted(() => {
                       :src="getImageUrl(item.image || item.gambar)"
                       :alt="item.name || item.title"
                       class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                      @error="$event.target.src = 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&q=80'"
+                      @error="$event.target.src = 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&q=80&fm=webp'"
                     />
                     <div class="absolute inset-0 bg-gradient-to-t from-emerald-950/35 via-transparent to-transparent pointer-events-none"></div>
                     <span class="absolute top-3 left-3 bg-white/90 backdrop-blur-sm text-emerald-800 text-[10px] font-black uppercase tracking-wider px-2.5 py-1.5 rounded-full shadow-sm">

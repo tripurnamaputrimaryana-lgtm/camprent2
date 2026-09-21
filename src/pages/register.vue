@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { UserPlus, Tent, Mail, Lock, User, Phone, Sparkles, ShieldCheck } from 'lucide-vue-next';
 import API from '../utils/axios';
+import { addAdminNotification } from '../utils/notifications';
 
 const router = useRouter();
 
@@ -29,6 +30,11 @@ const handleSubmit = async () => {
       localStorage.setItem('user', JSON.stringify(response.data.user));
     }
 
+    addAdminNotification({
+      title: 'Pelanggan baru',
+      message: `${formData.value.name} berhasil mendaftar akun baru.`,
+      type: 'success'
+    });
     alert('Registrasi berhasil! Silakan login.');
     router.push('/login');
   } catch (err) {
@@ -59,7 +65,7 @@ const handleSubmit = async () => {
       <!-- Background Image Bergerak (Pan Animation) -->
       <div 
         class="absolute inset-0 bg-cover bg-center animate-pan-bg scale-105"
-        style="background-image: url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80');"
+        style="background-image: url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&fm=webp');"
       ></div>
 
       <!-- Overlay Tint Hijau Alam & Putih Cerah -->

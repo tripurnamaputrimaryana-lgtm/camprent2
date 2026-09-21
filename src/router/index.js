@@ -13,6 +13,8 @@ import CategoriesAdmin from '../pages/categoriesadmin.vue';
 import RentalAdmin from '../pages/rentaladmin.vue';
 import UserAdmin from '../pages/useradmin.vue';
 import ReportsAdmin from '../pages/reportsadmin.vue';
+import SettingsAdmin from '../pages/settingsadmin.vue';
+import Profile from '../pages/profile.vue';
 import Cart from '../pages/cart.vue';
 
 import Navbar from '../components/navbar.vue';
@@ -27,6 +29,7 @@ const routes = [
   
   { path: '/register', component: Register },
   { path: '/login', component: Login },
+  { path: '/profile', component: Profile, meta: { requiresAuth: true } },
   
   // Rute User yang butuh login
   { path: '/rental', component: Rental, meta: { requiresAuth: true } },
@@ -40,6 +43,7 @@ const routes = [
   { path: '/rentaladmin', component: RentalAdmin, meta: { requiresAuth: true, requiresAdmin: true } },
   { path: '/useradmin', component: UserAdmin, meta: { requiresAuth: true, requiresAdmin: true } },
   { path: '/reportsadmin', component: ReportsAdmin, meta: { requiresAuth: true, requiresAdmin: true } },
+  { path: '/settingsadmin', component: SettingsAdmin, meta: { requiresAuth: true, requiresAdmin: true } },
   
   { path: '/navbar', component: Navbar },
   { path: '/footer', component: Footer },

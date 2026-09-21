@@ -2,11 +2,12 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { 
-  Plus, Search, Pencil, Trash2, Bell, Menu, X, Boxes, AlertCircle, Image, Eye, FileText
+  Plus, Search, Pencil, Trash2, Bell, Menu, X, Boxes, AlertCircle, Image, Eye, FileText, CheckCircle2
 } from 'lucide-vue-next';
 import api from '../utils/axios';
 import SidebarAdmin from '../components/SidebarAdmin.vue';
 import NavbarAdmin from '../components/navbaradmin.vue';
+import { addAdminNotification } from '../utils/notifications';
 
 const router = useRouter();
 
@@ -15,6 +16,23 @@ const categories = ref([]);
 const loading = ref(true);
 const isSubmitting = ref(false);
 const errorMessage = ref('');
+const successMessage = ref('');
+
+const showNotification = (type, message) => {
+  if (type === 'success') {
+    successMessage.value = message;
+    errorMessage.value = '';
+    setTimeout(() => {
+      successMessage.value = '';
+    }, 2500);
+  } else {
+    errorMessage.value = message;
+    successMessage.value = '';
+    setTimeout(() => {
+      errorMessage.value = '';
+    }, 3500);
+  }
+};
 
 const adminUser = ref(JSON.parse(localStorage.getItem('user') || '{}'));
 const searchTerm = ref('');
@@ -63,6 +81,7 @@ const resetForm = () => {
   isEditing.value = false;
   currentId.value = null;
   errorMessage.value = '';
+  successMessage.value = '';
   showModal.value = false;
 };
 
@@ -90,39 +109,77 @@ const handleSubmit = async () => {
   isSubmitting.value = true;
   errorMessage.value = '';
 
-  // Payload lengkap menyesuaikan field Laravel (Inggris / Indonesia / price_per_day)
-  const payload = {
-    name: form.value.name,
-    title: form.value.name,
-    category_id: form.value.category_id,
-    
-    // Kirim harga ke semua kemungkinan nama field backend
-    price_per_day: form.value.price,
-    price: form.value.price,
-    harga: form.value.price,
+  if (!form.value.name?.trim()) {
+    showNotification('error', 'Nama alat wajib diisi.');
+    isSubmitting.value = false;
+    return;
+  }
 
-    stock: form.value.stock,
-    stok: form.value.stock,
-    description: form.value.description,
-    deskripsi: form.value.description,
-    image: form.value.image,
-    gambar: form.value.image
+  if (!form.value.category_id) {
+    showNotification('error', 'Kategori wajib dipilih.');
+    isSubmitting.value = false;
+    return;
+  }
+
+  if (!form.value.price || Number(form.value.price) <= 0) {
+    showNotification('error', 'Harga sewa per hari harus lebih dari 0.');
+    isSubmitting.value = false;
+    return;
+  }
+
+  if (!form.value.stock || Number(form.value.stock) < 0) {
+    showNotification('error', 'Stok harus diisi dan tidak boleh negatif.');
+    isSubmitting.value = false;
+    return;
+  }
+
+  const payload = {
+    name: form.value.name.trim(),
+    title: form.value.name.trim(),
+    category_id: Number(form.value.category_id),
+    price_per_day: Number(form.value.price),
+    price: Number(form.value.price),
+    harga: Number(form.value.price),
+    stock: Number(form.value.stock),
+    stok: Number(form.value.stock),
+    description: form.value.description?.trim() || '',
+    deskripsi: form.value.description?.trim() || '',
+    image: form.value.image || '',
+    gambar: form.value.image || ''
   };
 
   try {
     if (isEditing.value) {
       await api.put(`/equipments/${currentId.value}`, payload);
+      addAdminNotification({
+        title: 'Stok diperbarui',
+        message: `${form.value.name.trim()} berhasil diperbarui.`,
+        type: 'success'
+      });
+      showNotification('success', 'Data alat berhasil diperbarui.');
     } else {
       await api.post('/equipments', payload);
+      addAdminNotification({
+        title: 'Barang baru',
+        message: `${form.value.name.trim()} berhasil ditambahkan ke stok.`,
+        type: 'success'
+      });
+      showNotification('success', 'Data alat berhasil ditambahkan.');
     }
+
     resetForm();
     fetchData();
   } catch (err) {
     console.error('Gagal menyimpan peralatan:', err);
     if (err.response && err.response.data) {
-      errorMessage.value = err.response.data.message || 'Gagal menyimpan data alat. Periksa inputan kamu.';
+      const responseData = err.response.data;
+      const validationErrors = responseData.errors || responseData;
+      const messages = Object.values(validationErrors)
+        .flatMap((value) => Array.isArray(value) ? value : [value])
+        .join(', ');
+      showNotification('error', messages || responseData.message || 'Gagal menyimpan data alat. Periksa inputan kamu.');
     } else {
-      errorMessage.value = 'Terjadi kesalahan koneksi ke server.';
+      showNotification('error', 'Terjadi kesalahan koneksi ke server.');
     }
   } finally {
     isSubmitting.value = false;
@@ -134,9 +191,15 @@ const handleDelete = async (id) => {
     try {
       await api.delete(`/equipments/${id}`);
       fetchData();
+      addAdminNotification({
+        title: 'Barang dihapus',
+        message: 'Satu item alat berhasil dihapus dari daftar stok.',
+        type: 'info'
+      });
+      showNotification('success', 'Alat berhasil dihapus.');
     } catch (err) {
       console.error('Gagal menghapus alat:', err);
-      alert('Gagal menghapus alat.');
+      showNotification('error', 'Gagal menghapus alat.');
     }
   }
 };
@@ -316,6 +379,11 @@ onMounted(() => {
         <div v-if="errorMessage" class="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2 text-rose-600 text-xs font-bold">
           <AlertCircle :size="16" class="shrink-0" />
           <span>{{ errorMessage }}</span>
+        </div>
+
+        <div v-if="successMessage" class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-2 text-emerald-700 text-xs font-bold">
+          <CheckCircle2 :size="16" class="shrink-0" />
+          <span>{{ successMessage }}</span>
         </div>
 
         <form @submit.prevent="handleSubmit" class="space-y-4">

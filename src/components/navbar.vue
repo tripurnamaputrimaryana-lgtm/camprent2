@@ -9,20 +9,36 @@ const user = ref(null);
 const isLoggedIn = ref(false);
 const isProfileOpen = ref(false);
 const { cartCount } = useCart();
+const apiOrigin = 'http://10.10.8.219:8000';
+
+const getAvatarUrl = (avatar) => {
+  if (!avatar) return '';
+  if (avatar.startsWith('data:') || avatar.startsWith('blob:') || avatar.startsWith('http')) return avatar;
+  return `${apiOrigin}/${avatar.replace(/^\//, '')}`;
+};
+
+const getUserAvatar = (currentUser) => getAvatarUrl(
+  currentUser?.photo || currentUser?.avatar || currentUser?.profile_photo || currentUser?.profile_image || currentUser?.image
+);
+
+const loadUser = () => {
+  const userData = localStorage.getItem('user');
+  if (!userData) return;
+
+  try {
+    user.value = JSON.parse(userData);
+    isLoggedIn.value = true;
+  } catch (e) {
+    user.value = null;
+    isLoggedIn.value = false;
+  }
+};
 
 onMounted(() => {
   const token = localStorage.getItem('token');
-  const userData = localStorage.getItem('user');
-  
-  if (token && userData) {
-    try {
-      user.value = JSON.parse(userData);
-      isLoggedIn.value = true;
-    } catch (e) {
-      user.value = null;
-      isLoggedIn.value = false;
-    }
-  }
+
+  if (token) loadUser();
+  window.addEventListener('profile-updated', loadUser);
 });
 
 const handleLogout = () => {
@@ -118,8 +134,9 @@ const handleHistoryClick = (e) => {
               :aria-expanded="isProfileOpen"
               aria-label="Lihat data diri"
             >
-              <span class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-black">
-                {{ user?.name?.charAt(0)?.toUpperCase() || 'P' }}
+              <span class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-black overflow-hidden">
+                <img v-if="getUserAvatar(user)" :src="getUserAvatar(user)" alt="Foto profil" class="w-full h-full object-cover" />
+                <span v-else>{{ user?.name?.charAt(0)?.toUpperCase() || 'P' }}</span>
               </span>
               <span class="hidden sm:inline">Halo, <strong class="text-emerald-700 font-bold">{{ user?.name || 'Petualang' }}</strong></span>
               <ChevronDown :size="15" class="text-emerald-600 transition-transform" :class="{ 'rotate-180': isProfileOpen }" />
@@ -130,8 +147,9 @@ const handleHistoryClick = (e) => {
               class="absolute right-0 top-full mt-2 w-72 max-w-[calc(100vw-2rem)] bg-white border border-emerald-100 rounded-2xl shadow-xl shadow-emerald-900/10 p-4 z-50"
             >
               <div class="flex items-center gap-3 pb-3 border-b border-slate-100">
-                <div class="w-11 h-11 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-lg font-black">
-                  {{ user?.name?.charAt(0)?.toUpperCase() || 'P' }}
+                <div class="w-11 h-11 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-lg font-black overflow-hidden">
+                  <img v-if="getUserAvatar(user)" :src="getUserAvatar(user)" alt="Foto profil" class="w-full h-full object-cover" />
+                  <span v-else>{{ user?.name?.charAt(0)?.toUpperCase() || 'P' }}</span>
                 </div>
                 <div class="min-w-0">
                   <p class="font-black text-slate-800 truncate">{{ user?.name || 'Petualang' }}</p>
@@ -148,6 +166,13 @@ const handleHistoryClick = (e) => {
                   <Phone :size="16" class="text-emerald-600 shrink-0" />
                   <span>{{ user?.phone_number || 'Nomor telepon belum tersedia' }}</span>
                 </div>
+                <button
+                  type="button"
+                  @click="router.push('/profile')"
+                  class="w-full mt-2 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-xl font-bold transition cursor-pointer"
+                >
+                  Edit Profil
+                </button>
               </div>
             </div>
           </div>
