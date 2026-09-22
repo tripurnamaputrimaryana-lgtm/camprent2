@@ -68,7 +68,7 @@ const handleHistoryClick = (e) => {
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex justify-between items-center gap-4">
       
       <!-- Brand Logo -->
-      <router-link to="/catalog" class="flex items-center gap-2.5 group cursor-pointer shrink-0">
+      <router-link to="/" class="flex items-center gap-2.5 group cursor-pointer shrink-0" aria-label="Kembali ke halaman awal">
         <div class="relative bg-gradient-to-tr from-emerald-600 to-teal-500 p-2.5 rounded-[0.9rem] text-white shadow-md shadow-emerald-600/20 group-hover:rotate-3 group-hover:scale-105 transition-transform">
           <Tent :size="22" class="stroke-[2.5]" />
           <span class="absolute -right-1 -top-1 w-2.5 h-2.5 rounded-full bg-lime-300 border-2 border-white"></span>
@@ -134,7 +134,7 @@ const handleHistoryClick = (e) => {
               :aria-expanded="isProfileOpen"
               aria-label="Lihat data diri"
             >
-              <span class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-black overflow-hidden">
+              <span class="w-7 h-7 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-black overflow-hidden ring-2 ring-white">
                 <img v-if="getUserAvatar(user)" :src="getUserAvatar(user)" alt="Foto profil" class="w-full h-full object-cover" />
                 <span v-else>{{ user?.name?.charAt(0)?.toUpperCase() || 'P' }}</span>
               </span>
@@ -147,7 +147,7 @@ const handleHistoryClick = (e) => {
               class="absolute right-0 top-full mt-2 w-72 max-w-[calc(100vw-2rem)] bg-white border border-emerald-100 rounded-2xl shadow-xl shadow-emerald-900/10 p-4 z-50"
             >
               <div class="flex items-center gap-3 pb-3 border-b border-slate-100">
-                <div class="w-11 h-11 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-lg font-black overflow-hidden">
+                <div class="w-11 h-11 rounded-full bg-emerald-600 text-white flex items-center justify-center text-lg font-black overflow-hidden ring-2 ring-emerald-100">
                   <img v-if="getUserAvatar(user)" :src="getUserAvatar(user)" alt="Foto profil" class="w-full h-full object-cover" />
                   <span v-else>{{ user?.name?.charAt(0)?.toUpperCase() || 'P' }}</span>
                 </div>

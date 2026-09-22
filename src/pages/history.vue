@@ -3,19 +3,11 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { 
   History, 
-  Clock, 
   CheckCircle2, 
-  XCircle, 
-  Upload, 
-  FileText, 
   Calendar,
   CreditCard,
-  X,
   AlertCircle,
-  ShoppingBag,
-  Building2,
-  Copy,
-  QrCode
+  ShoppingBag
 } from 'lucide-vue-next';
 import API from '../utils/axios';
 
@@ -27,21 +19,12 @@ const router = useRouter();
 const rentals = ref([]);
 const loading = ref(true);
 
-// State Modal Pembayaran & Upload
-const showPaymentModal = ref(false);
-const selectedRental = ref(null);
-const fileProof = ref(null);
 const isSubmitting = ref(false);
 const errorMessage = ref('');
 const successMessage = ref('');
-const copiedText = ref(false);
 
-// Info Rekening Pembayaran
-const paymentInfo = ref([
-  { bank: 'BCA', number: '1234567890', name: 'Outdoor Gear Rent' },
-  { bank: 'Mandiri', number: '0987654321', name: 'Outdoor Gear Rent' },
-  { bank: 'Gopay / OVO', number: '081234567890', name: 'Outdoor Gear' }
-]);
+// Endpoint dipastikan mengarah ke route backend
+const midtransTokenEndpoint = import.meta.env.VITE_MIDTRANS_TOKEN_ENDPOINT || '/payments/midtrans/token';
 
 // Fetch Data Riwayat Transaksi
 const fetchHistory = async () => {
@@ -59,41 +42,22 @@ const fetchHistory = async () => {
 const getImageUrl = (imagePath) => {
   if (!imagePath) return 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&q=80&fm=webp';
   if (imagePath.startsWith('http')) return imagePath;
-  return `http://localhost:8000/storage/${imagePath}`;
+  
+  // Penyesuaian: Menggunakan host dinamis agar tidak patah saat dites di HP / jaringan lokal
+  const baseUrl = import.meta.env.VITE_API_BASE_URL 
+    ? import.meta.env.VITE_API_BASE_URL.replace('/api', '') 
+    : `${window.location.protocol}//${window.location.hostname}:8000`;
+    
+  return `${baseUrl}/storage/${imagePath}`;
 };
 
-// Buka Modal Pembayaran & Upload
-const openPaymentModal = (rental) => {
-  selectedRental.value = rental;
-  fileProof.value = null;
-  errorMessage.value = '';
-  successMessage.value = '';
-  showPaymentModal.value = true;
-};
+const payWithMidtrans = async (rental) => {
+  const token = localStorage.getItem('token');
+  console.log('token:', token);
 
-const closePaymentModal = () => {
-  showPaymentModal.value = false;
-  selectedRental.value = null;
-  fileProof.value = null;
-};
-
-// Copy No Rekening ke Clipboard
-const copyToClipboard = (text) => {
-  navigator.clipboard.writeText(text);
-  copiedText.value = true;
-  setTimeout(() => {
-    copiedText.value = false;
-  }, 2000);
-};
-
-const handleFileChange = (e) => {
-  fileProof.value = e.target.files[0];
-};
-
-// Submit Bukti Pembayaran (Diarahkan ke /payments sesuai PaymentController)
-const handleUploadSubmit = async () => {
-  if (!fileProof.value) {
-    errorMessage.value = 'Silakan pilih file bukti pembayaran terlebih dahulu.';
+  if (!token) {
+    alert('Token login belum ada. Silakan login dulu.');
+    router.push('/login');
     return;
   }
 
@@ -101,28 +65,61 @@ const handleUploadSubmit = async () => {
   errorMessage.value = '';
   successMessage.value = '';
 
-  const formData = new FormData();
-  formData.append('rental_id', selectedRental.value.id);
-  formData.append('payment_method', 'Transfer Bank');
-  formData.append('amount', selectedRental.value.total_price);
-  formData.append('payment_proof', fileProof.value);
-
   try {
-    // Menggunakan endpoint /payments yang ditangani oleh PaymentController
-    await API.post('/payments', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
+    // 1. Cek ketersediaan SDK Midtrans Snap JS
+    if (!window.snap || typeof window.snap.pay !== 'function') {
+      throw new Error('Midtrans Snap belum siap. Pastikan script di index.html terpasang dan muat ulang halaman.');
+    }
+
+    // 2. Request snap_token ke Backend
+    const response = await API.post(
+      midtransTokenEndpoint,
+      {
+        rental_id: rental.id,
+        amount: Number(rental.total_price || 0)
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    // Handle ekstraksi struktur respon data yang fleksibel
+    const responseData = response.data?.data || response.data;
+    const snapToken = responseData?.snap_token || responseData?.token;
+
+    if (!snapToken) {
+      throw new Error('Token pembayaran Midtrans tidak diterima dari server.');
+    }
+
+    // 3. Eksekusi Pop-up Midtrans Snap
+    window.snap.pay(snapToken, {
+      onSuccess: (result) => {
+        console.log('Payment success:', result);
+        successMessage.value = 'Pembayaran berhasil. Status transaksi sedang diperbarui.';
+        fetchHistory();
+        isSubmitting.value = false;
+      },
+      onPending: (result) => {
+        console.log('Payment pending:', result);
+        successMessage.value = 'Pembayaran sedang diproses oleh Midtrans.';
+        fetchHistory();
+        isSubmitting.value = false;
+      },
+      onError: (result) => {
+        console.error('Payment error:', result);
+        errorMessage.value = 'Pembayaran gagal. Silakan coba lagi.';
+        isSubmitting.value = false;
+      },
+      onClose: () => {
+        isSubmitting.value = false;
+      }
     });
-
-    successMessage.value = 'Bukti pembayaran berhasil dikirim! Menunggu konfirmasi admin.';
-    fetchHistory();
-
-    setTimeout(() => {
-      closePaymentModal();
-    }, 1800);
   } catch (err) {
-    console.error('Gagal unggah bukti pembayaran:', err);
-    errorMessage.value = err.response?.data?.message || 'Gagal mengunggah bukti pembayaran.';
-  } finally {
+    console.error('Gagal memulai pembayaran Midtrans:', err);
+    errorMessage.value = err.response?.data?.message || err.message || 'Gagal memulai pembayaran Midtrans.';
     isSubmitting.value = false;
   }
 };
@@ -150,7 +147,7 @@ onMounted(() => {
             <div class="relative">
               <span class="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700">Aktivitas Akun</span>
               <h1 class="text-xl sm:text-2xl font-black text-slate-900">Riwayat Penyewaan</h1>
-              <p class="text-xs text-slate-500">Lakukan pembayaran dan unggah bukti transfer di sini.</p>
+              <p class="text-xs text-slate-500">Bayar pesanan dengan Midtrans tanpa perlu mengunggah bukti transfer.</p>
             </div>
           </div>
           <router-link to="/catalog" class="relative self-start sm:self-auto px-4 py-2.5 rounded-xl bg-white text-emerald-700 text-xs font-bold border border-emerald-100 hover:bg-emerald-50 transition shadow-sm">
@@ -199,6 +196,7 @@ onMounted(() => {
             class="relative bg-white rounded-3xl border border-emerald-100 p-5 sm:p-6 shadow-sm space-y-4 hover:border-emerald-300 hover:shadow-lg hover:shadow-emerald-900/5 transition-all overflow-hidden"
           >
             <div class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-emerald-400 to-teal-300"></div>
+            
             <!-- Header Transaksi -->
             <div class="flex flex-wrap items-center justify-between gap-3 border-b border-emerald-100 pb-4">
               <div class="flex items-center gap-2">
@@ -214,9 +212,9 @@ onMounted(() => {
               <div class="flex items-center gap-2">
                 <span :class="[
                   'text-[11px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider',
-                  item.payment_status === 'paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                  item.payment_status === 'paid' || item.payment_status === 'settlement' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
                 ]">
-                  {{ item.payment_status === 'paid' ? 'Lunas' : 'Belum Bayar' }}
+                  {{ item.payment_status === 'paid' || item.payment_status === 'settlement' ? 'Lunas' : 'Belum Bayar' }}
                 </span>
                 <span class="text-[11px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider bg-teal-50 text-teal-700 border border-teal-100">
                   {{ item.rental_status }}
@@ -224,10 +222,10 @@ onMounted(() => {
               </div>
             </div>
 
-            <!-- Item Alat yang Disewa -->
+            <!-- Item Alat yang Disewa (Penyesuaian: Menambahkan item.rentalItems) -->
             <div class="space-y-3">
               <div 
-                v-for="subItem in (item.rental_items || item.items || [])" 
+                v-for="subItem in (item.rentalItems || item.rental_items || item.items || [])" 
                 :key="subItem.id" 
                 class="flex items-center gap-4 bg-emerald-50/40 rounded-2xl p-3 border border-emerald-50"
               >
@@ -237,7 +235,7 @@ onMounted(() => {
                 />
                 <div class="flex-1 min-w-0">
                   <h4 class="font-bold text-slate-800 text-xs truncate">{{ subItem.equipment?.name || 'Peralatan Outdoor' }}</h4>
-                  <p class="text-[11px] text-slate-400">{{ subItem.qty }} Unit x Rp {{ Number(subItem.subtotal / subItem.qty || 0).toLocaleString('id-ID') }}</p>
+                  <p class="text-[11px] text-slate-400">{{ subItem.qty }} Unit x Rp {{ Number((subItem.subtotal || 0) / (subItem.qty || 1)).toLocaleString('id-ID') }}</p>
                 </div>
                 <div class="text-xs font-bold text-slate-700">
                   Rp {{ Number(subItem.subtotal || 0).toLocaleString('id-ID') }}
@@ -252,14 +250,15 @@ onMounted(() => {
                 <span class="text-base font-black text-emerald-700">Rp {{ Number(item.total_price || 0).toLocaleString('id-ID') }}</span>
               </div>
 
-              <!-- Tombol Bayar / Unggah Bukti -->
+              <!-- Tombol Bayar Midtrans -->
               <button 
-                v-if="item.payment_status !== 'paid'"
-                @click="openPaymentModal(item)"
-                class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-md shadow-emerald-600/20 cursor-pointer"
+                v-if="item.payment_status !== 'paid' && item.payment_status !== 'settlement'"
+                @click="payWithMidtrans(item)"
+                :disabled="isSubmitting"
+                class="bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-md shadow-emerald-600/20 cursor-pointer"
               >
                 <CreditCard :size="14" />
-                <span>Bayar & Upload Bukti</span>
+                <span>{{ isSubmitting ? 'Menyiapkan...' : 'Bayar dengan Midtrans' }}</span>
               </button>
             </div>
 
@@ -269,96 +268,13 @@ onMounted(() => {
       </main>
     </div>
 
-    <!-- MODAL INTRUKSI PEMBAYARAN & UPLOAD -->
-    <div v-if="showPaymentModal" class="fixed inset-0 z-50 bg-emerald-950/25 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-      <div class="bg-white rounded-[2rem] w-full max-w-lg p-6 shadow-2xl shadow-emerald-950/15 border border-emerald-100 space-y-5 my-8">
-        
-        <!-- Modal Header -->
-        <div class="flex items-center justify-between border-b border-emerald-100 pb-3">
-          <h3 class="font-black text-slate-800 text-sm flex items-center gap-2">
-            <CreditCard :size="18" class="text-emerald-600" /> Instruksi Pembayaran
-          </h3>
-          <button @click="closePaymentModal" class="text-slate-400 hover:text-slate-600 cursor-pointer">
-            <X :size="18" />
-          </button>
-        </div>
-
-        <!-- Alert Notification -->
-        <div v-if="errorMessage" class="p-3 bg-rose-50 text-rose-600 text-xs font-bold rounded-xl flex items-center gap-2">
-          <AlertCircle :size="15" /> {{ errorMessage }}
-        </div>
-        <div v-if="successMessage" class="p-3 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-xl flex items-center gap-2">
-          <CheckCircle2 :size="15" /> {{ successMessage }}
-        </div>
-
-        <!-- Detail Tagihan & Rekening -->
-        <div class="space-y-4">
-          <div class="bg-emerald-50/70 p-4 rounded-2xl border border-emerald-100 flex justify-between items-center">
-            <div>
-              <span class="text-[10px] font-bold text-slate-400 uppercase block">Total yang Harus Dibayar</span>
-              <span class="text-lg font-black text-emerald-700">Rp {{ Number(selectedRental?.total_price || 0).toLocaleString('id-ID') }}</span>
-            </div>
-              <span class="text-xs font-bold text-emerald-700 bg-white px-3 py-1 rounded-xl border border-emerald-100">
-              {{ selectedRental?.rental_code }}
-            </span>
-          </div>
-
-          <!-- Pilihan Rekening Pembayaran -->
-          <div>
-            <label class="text-[11px] font-bold text-slate-500 uppercase block mb-2">Transfer ke Rekening Resmi Kami:</label>
-            <div class="space-y-2">
-              <div 
-                v-for="(acc, idx) in paymentInfo" 
-                :key="idx" 
-                class="flex items-center justify-between bg-white p-3 rounded-xl border border-emerald-100 text-xs hover:border-emerald-300 transition"
-              >
-                <div class="flex items-center gap-3">
-                  <div class="bg-emerald-50 text-emerald-700 font-black px-2.5 py-1 rounded-lg text-[10px]">
-                    {{ acc.bank }}
-                  </div>
-                  <div>
-                    <p class="font-bold text-slate-800">{{ acc.number }}</p>
-                    <p class="text-[10px] text-slate-400">a.n {{ acc.name }}</p>
-                  </div>
-                </div>
-                <button 
-                  @click="copyToClipboard(acc.number)" 
-                  class="text-slate-400 hover:text-emerald-600 p-1 rounded-lg transition"
-                  title="Salin Nomor"
-                >
-                  <Copy :size="15" />
-                </button>
-              </div>
-            </div>
-            <p v-if="copiedText" class="text-[10px] font-bold text-emerald-600 mt-1 text-right">Nomor rekening berhasil disalin!</p>
-          </div>
-
-          <!-- Form Upload Bukti Transfer -->
-          <form @submit.prevent="handleUploadSubmit" class="space-y-3 pt-2 border-t border-slate-100">
-            <div>
-              <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Unggah Bukti Transfer</label>
-              <input 
-                type="file" 
-                accept="image/*,.pdf" 
-                @change="handleFileChange" 
-                required
-                class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 border border-emerald-100 rounded-xl cursor-pointer"
-              />
-              <p class="text-[10px] text-slate-400 mt-1">Format file: JPG, PNG, atau PDF (Max. 2MB)</p>
-            </div>
-
-            <div class="flex justify-end gap-2 pt-3">
-              <button type="button" @click="closePaymentModal" class="px-4 py-2 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-bold hover:bg-emerald-100 transition">Batal</button>
-              <button type="submit" :disabled="isSubmitting" class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition flex items-center gap-2">
-                <Upload :size="14" />
-                <span v-if="isSubmitting">Mengunggah...</span>
-                <span v-else>Konfirmasi Pembayaran</span>
-              </button>
-            </div>
-          </form>
-
-        </div>
-
+    <!-- Alert / Message Container -->
+    <div v-if="errorMessage || successMessage" class="fixed bottom-5 right-5 z-50 max-w-sm">
+      <div v-if="errorMessage" class="p-3 bg-rose-50 border border-rose-200 text-rose-600 text-xs font-bold rounded-xl flex items-center gap-2 shadow-lg">
+        <AlertCircle :size="15" /> {{ errorMessage }}
+      </div>
+      <div v-else class="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold rounded-xl flex items-center gap-2 shadow-lg">
+        <CheckCircle2 :size="15" /> {{ successMessage }}
       </div>
     </div>
 

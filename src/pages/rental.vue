@@ -155,33 +155,33 @@ onMounted(() => {
 
     <main class="flex-1 flex flex-col min-w-0">
       
-      <header class="relative overflow-hidden bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-800 border-b border-emerald-800 text-white">
-        <div class="absolute -right-16 -top-20 w-72 h-72 rounded-full bg-emerald-400/20 blur-3xl"></div>
-        <div class="absolute left-1/3 -bottom-24 w-64 h-64 rounded-full bg-teal-300/15 blur-3xl"></div>
+      <header class="relative overflow-hidden bg-gradient-to-br from-emerald-50 via-white to-teal-50 border-b border-emerald-100 text-slate-800">
+        <div class="absolute -right-16 -top-20 w-72 h-72 rounded-full bg-emerald-200/50 blur-3xl"></div>
+        <div class="absolute left-1/3 -bottom-24 w-64 h-64 rounded-full bg-teal-100/70 blur-3xl"></div>
         <div class="relative max-w-6xl mx-auto px-5 sm:px-8 py-10 sm:py-14">
           <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-7">
             <div class="max-w-2xl space-y-3">
-              <div class="inline-flex items-center gap-2 text-emerald-200 text-[10px] font-black uppercase tracking-[0.2em]">
-                <span class="w-2 h-2 rounded-full bg-lime-300 shadow-[0_0_12px_rgba(190,242,100,0.8)]"></span>
+              <div class="inline-flex items-center gap-2 text-emerald-700 text-[10px] font-black uppercase tracking-[0.2em]">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
                 Checkout Rental
               </div>
-              <h1 class="text-3xl sm:text-4xl font-black tracking-tight text-white">Siapkan petualanganmu.</h1>
-              <p class="text-sm text-emerald-100 leading-relaxed max-w-xl">Atur jadwal sewa dan periksa kembali perlengkapanmu sebelum pesanan dikirim.</p>
+              <h1 class="text-3xl sm:text-4xl font-black tracking-tight text-slate-900">Siapkan petualanganmu.</h1>
+              <p class="text-sm text-slate-600 leading-relaxed max-w-xl">Atur jadwal sewa dan periksa kembali perlengkapanmu sebelum pesanan dikirim.</p>
             </div>
 
             <button 
               @click="router.push('/catalog')" 
-              class="self-start sm:self-auto bg-white/10 hover:bg-white/20 border border-white/20 text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition cursor-pointer"
+              class="self-start sm:self-auto bg-white hover:bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition cursor-pointer shadow-sm"
             >
               <ArrowLeft :size="15" /> Kembali ke katalog
             </button>
           </div>
 
-          <div class="flex items-center gap-2 mt-8 text-[10px] font-bold text-emerald-200 uppercase tracking-wider">
-            <span class="flex items-center gap-1.5 text-lime-200"><span class="flex w-5 h-5 items-center justify-center rounded-full bg-lime-300 text-emerald-950"><Check :size="12" /></span> Pilih alat</span>
-            <span class="w-8 h-px bg-white/25"></span>
-            <span class="flex items-center gap-1.5 text-white"><span class="flex w-5 h-5 items-center justify-center rounded-full border-2 border-lime-300 text-lime-200">2</span> Atur sewa</span>
-            <span class="w-8 h-px bg-white/25"></span>
+          <div class="flex items-center gap-2 mt-8 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+            <span class="flex items-center gap-1.5 text-emerald-700"><span class="flex w-5 h-5 items-center justify-center rounded-full bg-emerald-600 text-white"><Check :size="12" /></span> Pilih alat</span>
+            <span class="w-8 h-px bg-emerald-200"></span>
+            <span class="flex items-center gap-1.5 text-emerald-800"><span class="flex w-5 h-5 items-center justify-center rounded-full border-2 border-emerald-500 text-emerald-700">2</span> Atur sewa</span>
+            <span class="w-8 h-px bg-emerald-200"></span>
             <span>Konfirmasi</span>
           </div>
         </div>

@@ -23,12 +23,6 @@ const user = ref({
 const avatarFile = ref(null);
 const avatarPreview = ref('');
 
-const handleLogout = () => {
-  localStorage.removeItem('token');
-  localStorage.removeItem('user');
-  router.push('/login');
-};
-
 const handleBack = () => {
   router.push('/catalog');
 };
@@ -135,15 +129,26 @@ onMounted(() => {
 
     <main class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       <div class="bg-white rounded-[2rem] border border-emerald-100 shadow-[0_24px_60px_-30px_rgba(16,185,129,0.35)] overflow-hidden">
-        <div class="bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-500 px-6 py-8 text-white">
-          <div class="flex items-center gap-3">
-            <div class="w-12 h-12 rounded-2xl bg-white/15 border border-white/30 flex items-center justify-center">
-              <User :size="22" />
+        <div class="bg-gradient-to-br from-emerald-50 via-white to-teal-50 px-6 py-8 sm:px-8 text-slate-800 border-b border-emerald-100">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-lg shadow-emerald-600/20">
+                <User :size="22" />
+              </div>
+              <div>
+                <p class="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-700">Akun Saya</p>
+                <h1 class="text-2xl font-black tracking-tight text-slate-900">Edit Profil</h1>
+                <p class="text-xs text-slate-500 mt-1">Perbarui informasi diri dan foto profilmu.</p>
+              </div>
             </div>
-            <div>
-              <p class="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-100">Akun Saya</p>
-              <h1 class="text-2xl font-black tracking-tight">Edit Profil</h1>
-            </div>
+            <button
+              type="button"
+              @click="handleBack"
+              class="self-start sm:self-auto bg-white hover:bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition cursor-pointer shadow-sm"
+            >
+              <ArrowLeft :size="15" />
+              Kembali
+            </button>
           </div>
         </div>
 
@@ -159,12 +164,12 @@ onMounted(() => {
           </div>
 
           <form @submit.prevent="handleSubmit" class="space-y-6">
-            <div class="flex flex-col sm:flex-row items-start gap-6">
-              <div class="flex flex-col items-center">
-                <div class="w-28 h-28 rounded-full border-4 border-emerald-100 bg-emerald-50 overflow-hidden shadow-lg">
+            <div class="flex flex-col sm:flex-row items-start gap-6 bg-emerald-50/50 border border-emerald-100 rounded-2xl p-4 sm:p-5">
+              <div class="flex flex-col items-center shrink-0">
+                <div class="w-28 h-28 rounded-full border-4 border-white bg-emerald-50 overflow-hidden shadow-lg shadow-emerald-900/10 ring-2 ring-emerald-100">
                   <img :src="avatarPreview || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user.name || 'User')" alt="Foto profil" class="w-full h-full object-cover" />
                 </div>
-                <label class="mt-3 cursor-pointer inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 border border-emerald-100 px-3 py-2 rounded-xl text-xs font-bold hover:bg-emerald-100 transition">
+                <label class="mt-3 cursor-pointer inline-flex items-center gap-2 bg-white text-emerald-700 border border-emerald-200 px-3 py-2 rounded-xl text-xs font-bold hover:bg-emerald-100 transition shadow-sm">
                   <Camera :size="15" />
                   Pilih Foto
                   <input type="file" accept="image/*" @change="handleAvatarChange" class="hidden" />
@@ -208,7 +213,7 @@ onMounted(() => {
               </div>
             </div>
 
-            <div class="flex justify-end">
+            <div class="flex justify-end pt-2 border-t border-slate-100">
               <button
                 type="submit"
                 :disabled="saving"
@@ -219,26 +224,6 @@ onMounted(() => {
               </button>
             </div>
 
-            <div v-if="successMessage" class="pt-4 border-t border-slate-100 flex justify-end">
-              <button
-                type="button"
-                @click="handleBack"
-                class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-5 py-3 rounded-xl text-xs font-bold flex items-center gap-2 transition cursor-pointer"
-              >
-                <ArrowLeft :size="16" />
-                Kembali
-              </button>
-            </div>
-
-            <div v-if="successMessage" class="pt-4 border-t border-slate-100 flex justify-end">
-              <button
-                type="button"
-                @click="handleLogout"
-                class="bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 px-5 py-3 rounded-xl text-xs font-bold transition cursor-pointer"
-              >
-                Keluar
-              </button>
-            </div>
           </form>
         </div>
       </div>
