@@ -22,9 +22,18 @@ const user = ref({
 });
 const avatarFile = ref(null);
 const avatarPreview = ref('');
+const apiOrigin = (import.meta.env.VITE_API_BASE_URL || 'http://10.10.11.94:8000/api')
+  .replace(/\/api\/?$/, '');
+
+const getAvatarUrl = (avatar) => {
+  if (!avatar) return '';
+  if (avatar.startsWith('data:') || avatar.startsWith('blob:') || avatar.startsWith('http')) return avatar;
+  const normalizedPath = avatar.replace(/^\//, '');
+  return `${apiOrigin}/${normalizedPath.startsWith('storage/') ? normalizedPath : `storage/${normalizedPath}`}`;
+};
 
 const handleBack = () => {
-  router.push('/catalog');
+  router.push('/');
 };
 
 const getUserFromStorage = () => {
@@ -46,7 +55,8 @@ const getUserFromStorage = () => {
       role: parsed.role || 'user',
       avatar: parsed.avatar || parsed.photo || parsed.profile_photo || parsed.profile_image || parsed.image || ''
     };
-    avatarPreview.value = parsed.avatar || parsed.photo || parsed.profile_photo || parsed.profile_image || parsed.image || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(parsed.name || 'User');
+    const storedAvatar = parsed.avatar || parsed.photo || parsed.profile_photo || parsed.profile_image || parsed.image;
+    avatarPreview.value = getAvatarUrl(storedAvatar) || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(parsed.name || 'User');
   } catch (error) {
     router.push('/login');
   }
@@ -89,19 +99,20 @@ const handleSubmit = async () => {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
 
-    const updatedUser = response.data?.user || response.data?.data?.user || {
-      ...JSON.parse(localStorage.getItem('user') || '{}'),
-      ...user.value
+    const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const responseUser = response.data?.user || response.data?.data?.user || {};
+    const updatedUser = {
+      ...storedUser,
+      ...user.value,
+      ...responseUser
     };
-    if (avatarFile.value && avatarPreview.value) {
-      updatedUser.photo = avatarPreview.value;
-    }
     localStorage.setItem('user', JSON.stringify(updatedUser));
     user.value = {
       ...user.value,
       ...updatedUser,
       avatar: updatedUser.avatar || updatedUser.photo || updatedUser.profile_photo || updatedUser.profile_image || updatedUser.image || user.value.avatar
     };
+    avatarPreview.value = getAvatarUrl(updatedUser.photo || updatedUser.avatar) || avatarPreview.value;
     window.dispatchEvent(new Event('profile-updated'));
 
     successMessage.value = 'Profil berhasil diperbarui.';

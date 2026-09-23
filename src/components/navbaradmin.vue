@@ -5,8 +5,9 @@ import {
   getNotifications,
   markAllNotificationsAsRead,
   markOneNotificationAsRead,
-  saveNotifications
+  addAdminNotification
 } from '../utils/notifications';
+import API from '../utils/axios';
 
 const props = defineProps({
   title: {
@@ -23,6 +24,8 @@ const emit = defineEmits(['menu', 'logout']);
 
 const isNotificationOpen = ref(false);
 const notifications = ref([]);
+const rentalSnapshot = ref({});
+let notificationPoller;
 
 const unreadCount = computed(() => notifications.value.filter((item) => !item.read).length);
 
@@ -46,12 +49,55 @@ const onNotificationsUpdated = () => {
   refreshNotifications();
 };
 
+const getRentalState = (rental) => `${rental.payment_status || ''}:${rental.rental_status || ''}`;
+
+const syncRentalNotifications = async () => {
+  try {
+    const response = await API.get('/rentals');
+    const rentals = response.data?.data || response.data || [];
+    const currentSnapshot = Object.fromEntries(
+      rentals.map((rental) => [rental.id, getRentalState(rental)])
+    );
+
+    if (!Object.keys(rentalSnapshot.value).length) {
+      rentalSnapshot.value = currentSnapshot;
+      return;
+    }
+
+    rentals.forEach((rental) => {
+      const previousState = rentalSnapshot.value[rental.id];
+      const currentState = currentSnapshot[rental.id];
+
+      if (previousState === undefined) {
+        addAdminNotification({
+          title: 'Pesanan rental baru',
+          message: `${rental.rental_code || `Rental #${rental.id}`} menunggu diproses.`,
+          type: 'info'
+        });
+      } else if (previousState !== currentState) {
+        addAdminNotification({
+          title: 'Status rental berubah',
+          message: `${rental.rental_code || `Rental #${rental.id}`} sekarang ${rental.payment_status || rental.rental_status || 'diperbarui'}.`,
+          type: 'info'
+        });
+      }
+    });
+
+    rentalSnapshot.value = currentSnapshot;
+  } catch (error) {
+    console.error('Gagal memperbarui notifikasi rental:', error);
+  }
+};
+
 onMounted(() => {
   refreshNotifications();
+  syncRentalNotifications();
+  notificationPoller = window.setInterval(syncRentalNotifications, 10000);
   window.addEventListener('admin-notifications-updated', onNotificationsUpdated);
 });
 
 onBeforeUnmount(() => {
+  window.clearInterval(notificationPoller);
   window.removeEventListener('admin-notifications-updated', onNotificationsUpdated);
 });
 </script>

@@ -9,12 +9,14 @@ const user = ref(null);
 const isLoggedIn = ref(false);
 const isProfileOpen = ref(false);
 const { cartCount } = useCart();
-const apiOrigin = 'http://10.10.8.219:8000';
+const apiOrigin = (import.meta.env.VITE_API_BASE_URL || 'http://10.10.11.94:8000/api')
+  .replace(/\/api\/?$/, '');
 
 const getAvatarUrl = (avatar) => {
   if (!avatar) return '';
   if (avatar.startsWith('data:') || avatar.startsWith('blob:') || avatar.startsWith('http')) return avatar;
-  return `${apiOrigin}/${avatar.replace(/^\//, '')}`;
+  const normalizedPath = avatar.replace(/^\//, '');
+  return `${apiOrigin}/${normalizedPath.startsWith('storage/') ? normalizedPath : `storage/${normalizedPath}`}`;
 };
 
 const getUserAvatar = (currentUser) => getAvatarUrl(
@@ -52,6 +54,19 @@ const handleLogout = () => {
 
 const toggleProfile = () => {
   isProfileOpen.value = !isProfileOpen.value;
+};
+
+const maskEmail = (email) => {
+  if (!email) return 'Email belum tersedia';
+  const [name, domain] = email.split('@');
+  if (!domain) return email;
+  return `${name.charAt(0)}***@${domain}`;
+};
+
+const maskPhone = (phone) => {
+  if (!phone) return 'Nomor telepon belum tersedia';
+  const value = String(phone);
+  return `${'*'.repeat(Math.max(0, value.length - 4))}${value.slice(-4)}`;
 };
 
 const handleHistoryClick = (e) => {
@@ -138,7 +153,7 @@ const handleHistoryClick = (e) => {
                 <img v-if="getUserAvatar(user)" :src="getUserAvatar(user)" alt="Foto profil" class="w-full h-full object-cover" />
                 <span v-else>{{ user?.name?.charAt(0)?.toUpperCase() || 'P' }}</span>
               </span>
-              <span class="hidden sm:inline">Halo, <strong class="text-emerald-700 font-bold">{{ user?.name || 'Petualang' }}</strong></span>
+              <strong class="hidden sm:inline text-emerald-700 font-bold">{{ user?.name || 'Petualang' }}</strong>
               <ChevronDown :size="15" class="text-emerald-600 transition-transform" :class="{ 'rotate-180': isProfileOpen }" />
             </button>
 
@@ -160,11 +175,11 @@ const handleHistoryClick = (e) => {
               <div class="space-y-3 pt-3 text-xs">
                 <div class="flex items-center gap-2.5 text-slate-600">
                   <Mail :size="16" class="text-emerald-600 shrink-0" />
-                  <span class="truncate">{{ user?.email || 'Email belum tersedia' }}</span>
+                  <span class="truncate">{{ maskEmail(user?.email) }}</span>
                 </div>
                 <div class="flex items-center gap-2.5 text-slate-600">
                   <Phone :size="16" class="text-emerald-600 shrink-0" />
-                  <span>{{ user?.phone_number || 'Nomor telepon belum tersedia' }}</span>
+                  <span>{{ maskPhone(user?.phone_number) }}</span>
                 </div>
                 <button
                   type="button"
@@ -173,17 +188,17 @@ const handleHistoryClick = (e) => {
                 >
                   Edit Profil
                 </button>
+                <button
+                  type="button"
+                  @click="handleLogout"
+                  class="w-full bg-white hover:bg-rose-50 text-rose-600 border border-rose-100 px-3 py-2 rounded-xl font-bold transition cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <LogOut :size="15" />
+                  Keluar
+                </button>
               </div>
             </div>
           </div>
-
-          <button
-            @click="handleLogout"
-            class="bg-white hover:bg-rose-50 text-rose-600 border border-rose-100 px-2.5 sm:px-3.5 py-2 rounded-[0.85rem] text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 shadow-sm"
-          >
-            <LogOut :size="15" />
-            <span class="hidden sm:inline">Keluar</span>
-          </button>
         </template>
 
       </div>

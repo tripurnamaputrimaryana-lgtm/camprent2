@@ -26,6 +26,15 @@ const successMessage = ref('');
 // Endpoint dipastikan mengarah ke route backend
 const midtransTokenEndpoint = import.meta.env.VITE_MIDTRANS_TOKEN_ENDPOINT || '/payments/midtrans/token';
 
+const isPaid = (paymentStatus) => [
+  'paid',
+  'settlement',
+  'capture',
+  'success',
+  'approved',
+  'completed'
+].includes(String(paymentStatus || '').toLowerCase());
+
 // Fetch Data Riwayat Transaksi
 const fetchHistory = async () => {
   loading.value = true;
@@ -98,9 +107,11 @@ const payWithMidtrans = async (rental) => {
     window.snap.pay(snapToken, {
       onSuccess: (result) => {
         console.log('Payment success:', result);
-        successMessage.value = 'Pembayaran berhasil. Status transaksi sedang diperbarui.';
-        fetchHistory();
-        isSubmitting.value = false;
+        markPaymentAsPaid(rental).finally(() => {
+          successMessage.value = 'Pembayaran berhasil. Status transaksi: Lunas.';
+          fetchHistory();
+          isSubmitting.value = false;
+        });
       },
       onPending: (result) => {
         console.log('Payment pending:', result);
@@ -121,6 +132,17 @@ const payWithMidtrans = async (rental) => {
     console.error('Gagal memulai pembayaran Midtrans:', err);
     errorMessage.value = err.response?.data?.message || err.message || 'Gagal memulai pembayaran Midtrans.';
     isSubmitting.value = false;
+  }
+};
+
+const markPaymentAsPaid = async (rental) => {
+  try {
+    await API.put(`/rentals/${rental.id}/status`, {
+      payment_status: 'paid',
+      rental_status: 'ready_for_pickup'
+    });
+  } catch (err) {
+    console.error('Gagal memperbarui status pembayaran:', err);
   }
 };
 
@@ -212,9 +234,9 @@ onMounted(() => {
               <div class="flex items-center gap-2">
                 <span :class="[
                   'text-[11px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider',
-                  item.payment_status === 'paid' || item.payment_status === 'settlement' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                  isPaid(item.payment_status) ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
                 ]">
-                  {{ item.payment_status === 'paid' || item.payment_status === 'settlement' ? 'Lunas' : 'Belum Bayar' }}
+                  {{ isPaid(item.payment_status) ? 'Lunas' : 'Belum Bayar' }}
                 </span>
                 <span class="text-[11px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider bg-teal-50 text-teal-700 border border-teal-100">
                   {{ item.rental_status }}
@@ -252,7 +274,7 @@ onMounted(() => {
 
               <!-- Tombol Bayar Midtrans -->
               <button 
-                v-if="item.payment_status !== 'paid' && item.payment_status !== 'settlement'"
+                v-if="!isPaid(item.payment_status)"
                 @click="payWithMidtrans(item)"
                 :disabled="isSubmitting"
                 class="bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-md shadow-emerald-600/20 cursor-pointer"

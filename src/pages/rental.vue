@@ -29,7 +29,10 @@ const endDate = ref('');
 const quantity = ref(1);
 const note = ref('');
 const { cartItems, clearCart } = useCart();
-const rentalItemCount = computed(() => cartItems.value.reduce((total, item) => total + item.quantity, 0));
+const isCartRental = computed(() => !route.query.equipment_id && cartItems.value.length > 0);
+const rentalItemCount = computed(() => isCartRental.value
+  ? cartItems.value.reduce((total, item) => total + item.quantity, 0)
+  : quantity.value);
 
 // State Loading & Alert
 const loading = ref(true);
@@ -73,7 +76,7 @@ const rentalDays = computed(() => {
 // Hitung total harga
 const totalPrice = computed(() => {
   if (rentalDays.value <= 0) return 0;
-  if (cartItems.value.length > 0) {
+  if (isCartRental.value) {
     return cartItems.value.reduce((total, item) => total + item.price * item.quantity, 0) * rentalDays.value;
   }
   if (!selectedEquipment.value) return 0;
@@ -111,7 +114,7 @@ const handleSubmitRental = async () => {
 
   submitting.value = true;
   try {
-    const items = cartItems.value.length > 0
+    const items = isCartRental.value
       ? cartItems.value.map((item) => ({ equipment_id: Number(item.id), qty: Number(item.quantity) }))
       : [{ equipment_id: Number(selectedEquipmentId.value), qty: Number(quantity.value) }];
     const payload = {
@@ -226,7 +229,7 @@ onMounted(() => {
           <div class="lg:col-span-7 bg-white p-6 sm:p-8 rounded-[1.75rem] border border-emerald-100 shadow-[0_18px_50px_-30px_rgba(16,185,129,0.35)] space-y-6">
             
             <!-- Daftar Equipment -->
-            <div v-if="cartItems.length > 0">
+            <div v-if="isCartRental">
               <label class="block text-xs font-bold text-emerald-900 uppercase tracking-wider mb-2">Perlengkapan yang Disewa</label>
               <div class="space-y-2">
                 <div v-for="item in cartItems" :key="item.id" class="flex justify-between items-center bg-emerald-50/60 border border-emerald-100 rounded-xl px-3 py-2.5 text-xs">
@@ -281,7 +284,7 @@ onMounted(() => {
             </div>
 
             <!-- Unit Quantity -->
-            <div v-if="cartItems.length === 0">
+            <div v-if="!isCartRental">
               <label class="block text-xs font-bold text-emerald-900 uppercase tracking-wider mb-2">
                 Jumlah Unit
               </label>
@@ -335,7 +338,7 @@ onMounted(() => {
             </h3>
 
             <!-- Item Card Preview -->
-            <div v-if="cartItems.length > 0" class="space-y-2">
+            <div v-if="isCartRental" class="space-y-2">
               <div v-for="item in cartItems" :key="item.id" class="flex gap-3.5 items-center bg-emerald-50/70 p-3 rounded-2xl border border-emerald-100">
                 <img :src="getImageUrl(item.image)" :alt="item.name" class="w-14 h-14 rounded-xl object-cover bg-emerald-100 shrink-0" />
                 <div class="space-y-0.5 min-w-0">
@@ -372,7 +375,7 @@ onMounted(() => {
 
               <div class="flex justify-between text-slate-500">
                 <span>Total unit</span>
-                <span class="font-bold text-slate-800">{{ cartItems.length > 0 ? cartItems.reduce((sum, item) => sum + item.quantity, 0) : quantity }} Unit</span>
+                <span class="font-bold text-slate-800">{{ isCartRental ? cartItems.reduce((sum, item) => sum + item.quantity, 0) : quantity }} Unit</span>
               </div>
             </div>
 
@@ -387,7 +390,7 @@ onMounted(() => {
             <!-- Submit Button -->
             <button
               @click="handleSubmitRental"
-              :disabled="submitting || rentalDays <= 0 || (!selectedEquipment && cartItems.length === 0)"
+              :disabled="submitting || rentalDays <= 0 || (!selectedEquipment && !isCartRental)"
               class="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white py-3.5 rounded-xl flex items-center justify-center gap-2 text-xs font-bold transition shadow-lg shadow-emerald-600/20 active:scale-98 cursor-pointer"
             >
               <ShieldCheck :size="15" />
