@@ -37,7 +37,7 @@ const getImageUrl = (imagePath) => {
 };
 
 const goToCatalog = () => {
-  router.push({ path: '/rental', query: { equipment_id: item.id } });
+  router.push('/catalog');
 };
 
 const handleAddToCart = (item) => {
@@ -62,7 +62,7 @@ const handleSewaClick = (item) => {
     router.push('/login');
     return;
   }
-  router.push('/catalog');
+  router.push({ path: '/rental', query: { equipment_id: item.id } });
 };
 
 onMounted(() => {

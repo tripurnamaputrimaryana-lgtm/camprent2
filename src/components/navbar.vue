@@ -3,25 +3,37 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { Tent, LogOut, History, LogIn, UserPlus, ShoppingCart, ChevronDown, Mail, Phone } from 'lucide-vue-next';
 import { useCart } from '../utils/cart';
+import API from '../utils/axios';
 
 const router = useRouter();
 const user = ref(null);
 const isLoggedIn = ref(false);
 const isProfileOpen = ref(false);
 const { cartCount } = useCart();
-const apiOrigin = (import.meta.env.VITE_API_BASE_URL || 'http://10.10.11.94:8000/api')
+const apiOrigin = (API.defaults.baseURL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api')
   .replace(/\/api\/?$/, '');
 
 const getAvatarUrl = (avatar) => {
-  if (!avatar) return '';
+  if (!avatar || typeof avatar !== 'string') return '';
   if (avatar.startsWith('data:') || avatar.startsWith('blob:') || avatar.startsWith('http')) return avatar;
   const normalizedPath = avatar.replace(/^\//, '');
   return `${apiOrigin}/${normalizedPath.startsWith('storage/') ? normalizedPath : `storage/${normalizedPath}`}`;
 };
 
 const getUserAvatar = (currentUser) => getAvatarUrl(
-  currentUser?.photo || currentUser?.avatar || currentUser?.profile_photo || currentUser?.profile_image || currentUser?.image
+  currentUser?.photo
+    || currentUser?.avatar
+    || currentUser?.photo_url
+    || currentUser?.avatar_url
+    || currentUser?.profile_photo
+    || currentUser?.profile_image
+    || currentUser?.image
 );
+
+const getAvatarStorageKey = (currentUser) => {
+  const identity = currentUser?.id || currentUser?.email;
+  return identity ? `camprent_avatar_${identity}` : '';
+};
 
 const loadUser = () => {
   const userData = localStorage.getItem('user');
@@ -44,6 +56,11 @@ onMounted(() => {
 });
 
 const handleLogout = () => {
+  const avatar = getUserAvatar(user.value);
+  const avatarStorageKey = getAvatarStorageKey(user.value);
+  if (avatar && avatarStorageKey) {
+    localStorage.setItem(avatarStorageKey, avatar);
+  }
   localStorage.removeItem('token');
   localStorage.removeItem('user');
   isLoggedIn.value = false;

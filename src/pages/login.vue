@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { LogIn, Tent, Mail, Lock, Sparkles, ShieldCheck } from 'lucide-vue-next';
+import { LogIn, Tent, Mail, Lock, Sparkles, ShieldCheck, Eye, EyeOff } from 'lucide-vue-next';
 import API from '../utils/axios';
 
 const router = useRouter();
@@ -13,6 +13,12 @@ const formData = ref({
 
 const error = ref('');
 const loading = ref(false);
+const showPassword = ref(false);
+
+const getAvatarStorageKey = (currentUser) => {
+  const identity = currentUser?.id || currentUser?.email;
+  return identity ? `camprent_avatar_${identity}` : '';
+};
 
 const handleSubmit = async () => {
   error.value = '';
@@ -23,20 +29,28 @@ const handleSubmit = async () => {
 
     // Ambil token dari berbagai struktur response Laravel (token / access_token / data.token)
     const token = response.data.token || response.data.access_token || response.data.data?.token;
-    const user = response.data.user || response.data.data?.user;
+    const user = response.data.user || response.data.data?.user || response.data.data || {};
 
     if (!token) {
       throw new Error('Token authentication tidak ditemukan dari server.');
     }
 
+    const avatarStorageKey = getAvatarStorageKey(user);
+    const savedAvatar = avatarStorageKey ? localStorage.getItem(avatarStorageKey) : '';
+    const userWithAvatar = savedAvatar && !(
+      user.photo || user.avatar || user.photo_url || user.avatar_url
+    )
+      ? { ...user, avatar: savedAvatar, photo: savedAvatar, photo_url: savedAvatar }
+      : user;
+
     // Simpan token dan data user yang valid ke LocalStorage
     localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(user || {}));
+    localStorage.setItem('user', JSON.stringify(userWithAvatar));
 
     alert('Login berhasil!');
 
     // Redirect berdasarkan role
-    if (user?.role === 'admin') {
+    if (userWithAvatar?.role === 'admin') {
       router.push('/dashboardadmin');
     } else {
       router.push('/');
@@ -145,11 +159,15 @@ const handleSubmit = async () => {
               <Lock class="absolute left-3.5 top-3 text-slate-400" :size="18" />
               <input
                 v-model="formData.password"
-                type="password"
+                :type="showPassword ? 'text' : 'password'"
                 required
                 placeholder="••••••••"
-                class="w-full pl-10 pr-4 py-2.5 bg-emerald-50/40 border border-emerald-100 text-slate-800 placeholder-slate-400 rounded-xl text-sm font-medium focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 focus:bg-white outline-none transition-all duration-200 shadow-sm"
+                class="w-full pl-10 pr-11 py-2.5 bg-emerald-50/40 border border-emerald-100 text-slate-800 placeholder-slate-400 rounded-xl text-sm font-medium focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 focus:bg-white outline-none transition-all duration-200 shadow-sm"
               />
+              <button type="button" :aria-label="showPassword ? 'Sembunyikan password' : 'Tampilkan password'" @click="showPassword = !showPassword" class="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-emerald-600 transition cursor-pointer">
+                <EyeOff v-if="showPassword" :size="17" />
+                <Eye v-else :size="17" />
+              </button>
             </div>
           </div>
 

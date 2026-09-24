@@ -24,6 +24,7 @@ const route = useRoute();
 // State Form Rental
 const equipments = ref([]);
 const selectedEquipmentId = ref(route.query.equipment_id || '');
+const isEquipmentLocked = computed(() => Boolean(route.query.equipment_id));
 const startDate = ref('');
 const endDate = ref('');
 const quantity = ref(1);
@@ -39,6 +40,7 @@ const loading = ref(true);
 const submitting = ref(false);
 const errorMessage = ref('');
 const successMessage = ref('');
+const midtransTokenEndpoint = import.meta.env.VITE_MIDTRANS_TOKEN_ENDPOINT || '/payments/midtrans/token';
 
 // Ambil daftar alat camping
 const fetchData = async () => {
@@ -90,6 +92,56 @@ const getImageUrl = (imagePath) => {
   return `http://localhost:8000/storage/${imagePath}`;
 };
 
+const handleBackToCatalog = () => {
+  const shouldLeave = window.confirm('Apakah kamu yakin ingin meninggalkan halaman checkout? Data checkout yang sedang diisi akan hilang.');
+  if (shouldLeave) {
+    router.push('/catalog');
+  }
+};
+
+const payWithMidtrans = async (rental) => {
+  if (!window.snap || typeof window.snap.pay !== 'function') {
+    throw new Error('Midtrans Snap belum siap. Muat ulang halaman lalu coba lagi.');
+  }
+
+  const response = await API.post(midtransTokenEndpoint, {
+    rental_id: rental.id,
+    amount: Number(rental.total_price || totalPrice.value || 0)
+  });
+  const responseData = response.data?.data || response.data;
+  const snapToken = responseData?.snap_token || responseData?.token;
+
+  if (!snapToken) {
+    throw new Error('Token pembayaran Midtrans tidak diterima dari server.');
+  }
+
+  window.snap.pay(snapToken, {
+    onSuccess: async () => {
+      try {
+        await API.put(`/rentals/${rental.id}/status`, {
+          payment_status: 'paid',
+          rental_status: 'ready_for_pickup'
+        });
+        successMessage.value = 'Pembayaran berhasil. Status transaksi: Lunas.';
+      } catch (err) {
+        successMessage.value = 'Pembayaran berhasil diproses oleh Midtrans.';
+      }
+      submitting.value = false;
+    },
+    onPending: () => {
+      successMessage.value = 'Pembayaran sedang diproses oleh Midtrans.';
+      submitting.value = false;
+    },
+    onError: () => {
+      errorMessage.value = 'Pembayaran gagal. Silakan coba lagi dari riwayat sewa.';
+      submitting.value = false;
+    },
+    onClose: () => {
+      submitting.value = false;
+    }
+  });
+};
+
 // Submit Formulir Rental
 const handleSubmitRental = async () => {
   errorMessage.value = '';
@@ -127,18 +179,23 @@ const handleSubmitRental = async () => {
       note: note.value,
     };
 
-    await API.post('/rentals', payload);
+    const rentalResponse = await API.post('/rentals', payload);
+    const rental = rentalResponse.data?.rental
+      || rentalResponse.data?.data?.rental
+      || rentalResponse.data?.data
+      || rentalResponse.data;
+
+    if (!rental?.id) {
+      throw new Error('ID transaksi rental tidak diterima dari server.');
+    }
+
     addAdminNotification({
       title: 'Transaksi baru',
       message: `Ada pesanan baru untuk ${selectedEquipment.value?.name || 'alat'} dengan total Rp ${Number(totalPrice.value).toLocaleString('id-ID')}.`,
       type: 'info'
     });
     clearCart();
-    successMessage.value = 'Pengajuan sewa berhasil dibuat!';
-
-    setTimeout(() => {
-      router.push('/catalog');
-    }, 1500);
+    await payWithMidtrans({ ...rental, total_price: rental.total_price || totalPrice.value });
   } catch (err) {
     console.error('Gagal membuat transaksi:', err);
     errorMessage.value = err.response?.data?.message || 'Terjadi kesalahan saat membuat transaksi.';
@@ -173,7 +230,7 @@ onMounted(() => {
             </div>
 
             <button 
-              @click="router.push('/catalog')" 
+              @click="handleBackToCatalog" 
               class="self-start sm:self-auto bg-white hover:bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition cursor-pointer shadow-sm"
             >
               <ArrowLeft :size="15" /> Kembali ke katalog
@@ -244,7 +301,13 @@ onMounted(() => {
               </label>
               <select
                 v-model="selectedEquipmentId"
-                class="w-full px-4 py-3 bg-emerald-50/50 border border-emerald-100 rounded-xl text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 focus:bg-white outline-none transition"
+                :disabled="isEquipmentLocked"
+                :class="[
+                  'w-full px-4 py-3 border border-emerald-100 rounded-xl text-xs font-semibold text-slate-700 outline-none transition',
+                  isEquipmentLocked
+                    ? 'bg-emerald-50/80 cursor-not-allowed opacity-90'
+                    : 'bg-emerald-50/50 focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 focus:bg-white'
+                ]"
               >
                 <option disabled value="">-- Pilih Alat --</option>
                 <option
@@ -394,7 +457,7 @@ onMounted(() => {
               class="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white py-3.5 rounded-xl flex items-center justify-center gap-2 text-xs font-bold transition shadow-lg shadow-emerald-600/20 active:scale-98 cursor-pointer"
             >
               <ShieldCheck :size="15" />
-              <span>{{ submitting ? 'Mengirim pesanan...' : 'Konfirmasi & Ajukan Sewa' }}</span>
+              <span>{{ submitting ? 'Menyiapkan pembayaran...' : 'Bayar dengan Midtrans' }}</span>
             </button>
           </div>
 

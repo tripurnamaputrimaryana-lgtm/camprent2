@@ -7,7 +7,9 @@ import {
   Calendar,
   CreditCard,
   AlertCircle,
-  ShoppingBag
+  ShoppingBag,
+  Eye,
+  X
 } from 'lucide-vue-next';
 import API from '../utils/axios';
 
@@ -22,6 +24,8 @@ const loading = ref(true);
 const isSubmitting = ref(false);
 const errorMessage = ref('');
 const successMessage = ref('');
+const showDetailModal = ref(false);
+const selectedRental = ref(null);
 
 // Endpoint dipastikan mengarah ke route backend
 const midtransTokenEndpoint = import.meta.env.VITE_MIDTRANS_TOKEN_ENDPOINT || '/payments/midtrans/token';
@@ -58,6 +62,27 @@ const getImageUrl = (imagePath) => {
     : `${window.location.protocol}//${window.location.hostname}:8000`;
     
   return `${baseUrl}/storage/${imagePath}`;
+};
+
+const openDetailModal = (rental) => {
+  selectedRental.value = rental;
+  showDetailModal.value = true;
+};
+
+const closeDetailModal = () => {
+  showDetailModal.value = false;
+  selectedRental.value = null;
+};
+
+const startPaymentFromDetail = () => {
+  const rental = selectedRental.value;
+  if (!rental?.id) {
+    errorMessage.value = 'ID pesanan tidak ditemukan. Silakan muat ulang riwayat pesanan.';
+    return;
+  }
+
+  closeDetailModal();
+  payWithMidtrans(rental);
 };
 
 const payWithMidtrans = async (rental) => {
@@ -169,7 +194,7 @@ onMounted(() => {
             <div class="relative">
               <span class="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700">Aktivitas Akun</span>
               <h1 class="text-xl sm:text-2xl font-black text-slate-900">Riwayat Penyewaan</h1>
-              <p class="text-xs text-slate-500">Bayar pesanan dengan Midtrans tanpa perlu mengunggah bukti transfer.</p>
+              <p class="text-xs text-slate-500">Bayar pesananmu dengan mudah tanpa perlu mengunggah bukti transfer.</p>
             </div>
           </div>
           <router-link to="/catalog" class="relative self-start sm:self-auto px-4 py-2.5 rounded-xl bg-white text-emerald-700 text-xs font-bold border border-emerald-100 hover:bg-emerald-50 transition shadow-sm">
@@ -272,22 +297,95 @@ onMounted(() => {
                 <span class="text-base font-black text-emerald-700">Rp {{ Number(item.total_price || 0).toLocaleString('id-ID') }}</span>
               </div>
 
-              <!-- Tombol Bayar Midtrans -->
-              <button 
-                v-if="!isPaid(item.payment_status)"
-                @click="payWithMidtrans(item)"
-                :disabled="isSubmitting"
-                class="bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-md shadow-emerald-600/20 cursor-pointer"
-              >
-                <CreditCard :size="14" />
-                <span>{{ isSubmitting ? 'Menyiapkan...' : 'Bayar dengan Midtrans' }}</span>
-              </button>
+              <!-- Tombol Detail dan Bayar -->
+              <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  @click="openDetailModal(item)"
+                  class="bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
+                >
+                  <Eye :size="14" />
+                  <span>Detail</span>
+                </button>
+                <button 
+                  v-if="!isPaid(item.payment_status)"
+                  @click="openDetailModal(item)"
+                  :disabled="isSubmitting"
+                  class="bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-md shadow-emerald-600/20 cursor-pointer"
+                >
+                  <CreditCard :size="14" />
+                  <span>{{ isSubmitting ? 'Menyiapkan...' : 'Bayar Sekarang' }}</span>
+                </button>
+              </div>
             </div>
 
           </div>
         </div>
 
       </main>
+    </div>
+
+    <!-- Detail Pesanan -->
+    <div v-if="showDetailModal && selectedRental" class="fixed inset-0 z-50 bg-emerald-950/25 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-white rounded-[2rem] w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 shadow-2xl border border-emerald-100">
+        <div class="flex items-center justify-between border-b border-emerald-100 pb-4">
+          <div>
+            <span class="text-[10px] font-black uppercase tracking-wider text-emerald-700">Detail Pesanan</span>
+            <h2 class="text-lg font-black text-slate-900 mt-1">{{ selectedRental.rental_code || `Pesanan #${selectedRental.id}` }}</h2>
+          </div>
+          <button type="button" @click="closeDetailModal" class="p-2 text-slate-400 hover:text-slate-700 cursor-pointer" aria-label="Tutup detail pesanan">
+            <X :size="19" />
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 py-4 text-xs">
+          <div class="bg-emerald-50/70 rounded-xl p-3">
+            <span class="block text-[10px] uppercase font-bold text-slate-400">Tanggal Mulai</span>
+            <strong class="block text-slate-800 mt-1">{{ selectedRental.start_date || '-' }}</strong>
+          </div>
+          <div class="bg-emerald-50/70 rounded-xl p-3">
+            <span class="block text-[10px] uppercase font-bold text-slate-400">Tanggal Selesai</span>
+            <strong class="block text-slate-800 mt-1">{{ selectedRental.end_date || '-' }}</strong>
+          </div>
+          <div class="bg-emerald-50/70 rounded-xl p-3">
+            <span class="block text-[10px] uppercase font-bold text-slate-400">Pembayaran</span>
+            <strong class="block text-emerald-700 mt-1">{{ isPaid(selectedRental.payment_status) ? 'Lunas' : 'Belum Bayar' }}</strong>
+          </div>
+          <div class="bg-emerald-50/70 rounded-xl p-3">
+            <span class="block text-[10px] uppercase font-bold text-slate-400">Status Rental</span>
+            <strong class="block text-slate-800 mt-1 capitalize">{{ selectedRental.rental_status || '-' }}</strong>
+          </div>
+        </div>
+
+        <div class="border-t border-emerald-100 pt-4 space-y-3">
+          <h3 class="text-xs font-black uppercase tracking-wider text-emerald-800">Barang Pesanan</h3>
+          <div v-for="subItem in (selectedRental.rentalItems || selectedRental.rental_items || selectedRental.items || [])" :key="subItem.id" class="flex items-center gap-3 bg-slate-50 rounded-xl p-3">
+            <img :src="getImageUrl(subItem.equipment?.image || subItem.equipment?.gambar)" :alt="subItem.equipment?.name || 'Peralatan'" class="w-14 h-14 rounded-xl object-cover border border-emerald-100 shrink-0" />
+            <div class="flex-1 min-w-0">
+              <p class="font-bold text-slate-800 text-xs truncate">{{ subItem.equipment?.name || 'Peralatan Outdoor' }}</p>
+              <p class="text-[11px] text-slate-500 mt-1">{{ subItem.qty || 0 }} unit</p>
+            </div>
+            <span class="text-xs font-black text-emerald-700">Rp {{ Number(subItem.subtotal || 0).toLocaleString('id-ID') }}</span>
+          </div>
+          <div v-if="!(selectedRental.rentalItems || selectedRental.rental_items || selectedRental.items || []).length" class="text-xs text-slate-400 bg-slate-50 rounded-xl p-4">Detail barang tidak tersedia.</div>
+        </div>
+
+        <div class="border-t border-emerald-100 mt-4 pt-4 flex items-center justify-between">
+          <span class="text-xs font-bold text-slate-500">Total Tagihan</span>
+          <strong class="text-lg font-black text-emerald-700">Rp {{ Number(selectedRental.total_price || 0).toLocaleString('id-ID') }}</strong>
+        </div>
+
+        <button
+          v-if="!isPaid(selectedRental.payment_status)"
+          type="button"
+          @click="startPaymentFromDetail"
+          :disabled="isSubmitting"
+          class="w-full mt-5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition shadow-md shadow-emerald-600/20 cursor-pointer"
+        >
+          <CreditCard :size="15" />
+          <span>{{ isSubmitting ? 'Menyiapkan...' : 'Bayar Sekarang' }}</span>
+        </button>
+      </div>
     </div>
 
     <!-- Alert / Message Container -->

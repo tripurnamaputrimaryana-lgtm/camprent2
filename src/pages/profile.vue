@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { User, Mail, Phone, Camera, Save, CheckCircle2, AlertCircle, ArrowLeft } from 'lucide-vue-next';
+import { User, Mail, Phone, Camera, Save, CheckCircle2, AlertCircle, ArrowLeft, Eye, EyeOff } from 'lucide-vue-next';
 import Navbar from '../components/navbar.vue';
 import Footer from '../components/footer.vue';
 import API from '../utils/axios';
@@ -17,16 +17,21 @@ const user = ref({
   email: '',
   phone_number: '',
   role: 'user',
-  avatar: '',
-  password: ''
+  avatar: ''
 });
 const avatarFile = ref(null);
 const avatarPreview = ref('');
-const apiOrigin = (import.meta.env.VITE_API_BASE_URL || 'http://10.10.11.94:8000/api')
+const currentPassword = ref('');
+const newPassword = ref('');
+const confirmPassword = ref('');
+const showCurrentPassword = ref(false);
+const showNewPassword = ref(false);
+const showConfirmPassword = ref(false);
+const apiOrigin = (API.defaults.baseURL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api')
   .replace(/\/api\/?$/, '');
 
 const getAvatarUrl = (avatar) => {
-  if (!avatar) return '';
+  if (!avatar || typeof avatar !== 'string') return '';
   if (avatar.startsWith('data:') || avatar.startsWith('blob:') || avatar.startsWith('http')) return avatar;
   const normalizedPath = avatar.replace(/^\//, '');
   return `${apiOrigin}/${normalizedPath.startsWith('storage/') ? normalizedPath : `storage/${normalizedPath}`}`;
@@ -80,6 +85,20 @@ const handleSubmit = async () => {
   successMessage.value = '';
 
   try {
+    const isChangingPassword = currentPassword.value || newPassword.value || confirmPassword.value;
+    if (isChangingPassword && !currentPassword.value) {
+      errorMessage.value = 'Masukkan password saat ini untuk mengganti password.';
+      return;
+    }
+    if (isChangingPassword && !newPassword.value) {
+      errorMessage.value = 'Masukkan password baru.';
+      return;
+    }
+    if (isChangingPassword && newPassword.value !== confirmPassword.value) {
+      errorMessage.value = 'Konfirmasi password baru tidak cocok.';
+      return;
+    }
+
     const payload = new FormData();
     payload.append('name', user.value.name || '');
     payload.append('email', user.value.email || '');
@@ -87,8 +106,10 @@ const handleSubmit = async () => {
     payload.append('role', user.value.role || 'user');
     payload.append('_method', 'PUT');
 
-    if (user.value.password && user.value.password.trim()) {
-      payload.append('password', user.value.password.trim());
+    if (isChangingPassword) {
+      payload.append('current_password', currentPassword.value);
+      payload.append('password', newPassword.value);
+      payload.append('password_confirmation', confirmPassword.value);
     }
 
     if (avatarFile.value) {
@@ -100,11 +121,23 @@ const handleSubmit = async () => {
     });
 
     const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
-    const responseUser = response.data?.user || response.data?.data?.user || {};
+    const responseUser = response.data?.user || response.data?.data?.user || response.data?.data || {};
+    const savedAvatar = responseUser.photo
+      || responseUser.avatar
+      || responseUser.photo_url
+      || responseUser.avatar_url
+      || responseUser.profile_photo
+      || responseUser.profile_image
+      || responseUser.image
+      || user.value.avatar
+      || (typeof avatarPreview.value === 'string' && avatarPreview.value.startsWith('data:') ? avatarPreview.value : '');
     const updatedUser = {
       ...storedUser,
       ...user.value,
-      ...responseUser
+      ...responseUser,
+      avatar: savedAvatar,
+      photo: responseUser.photo || savedAvatar,
+      photo_url: responseUser.photo_url || savedAvatar
     };
     localStorage.setItem('user', JSON.stringify(updatedUser));
     user.value = {
@@ -117,6 +150,9 @@ const handleSubmit = async () => {
 
     successMessage.value = 'Profil berhasil diperbarui.';
     avatarFile.value = null;
+    currentPassword.value = '';
+    newPassword.value = '';
+    confirmPassword.value = '';
   } catch (err) {
     console.error('Gagal update profil:', err);
     const validationErrors = err.response?.data?.errors;
@@ -212,15 +248,44 @@ onMounted(() => {
                   </div>
                 </div>
 
-                <div class="md:col-span-2">
-                  <label class="block text-[11px] font-black uppercase tracking-[0.16em] text-slate-500 mb-1.5">Password Baru (opsional)</label>
-                  <input v-model="user.password" type="password" placeholder="Isi jika ingin ganti password" class="w-full px-4 py-2.5 bg-emerald-50/40 border border-emerald-100 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 focus:bg-white outline-none" />
+                <div class="md:col-span-2 space-y-4">
+                  <div>
+                    <label class="block text-[11px] font-black uppercase tracking-[0.16em] text-slate-500 mb-1.5">Password Saat Ini</label>
+                    <div class="relative">
+                      <input v-model="currentPassword" :type="showCurrentPassword ? 'text' : 'password'" autocomplete="current-password" placeholder="Password saat ini" class="w-full px-4 pr-11 py-2.5 bg-emerald-50/40 border border-emerald-100 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 focus:bg-white outline-none" />
+                      <button type="button" :aria-label="showCurrentPassword ? 'Sembunyikan password saat ini' : 'Tampilkan password saat ini'" @click="showCurrentPassword = !showCurrentPassword" class="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-emerald-600 transition cursor-pointer">
+                        <EyeOff v-if="showCurrentPassword" :size="17" />
+                        <Eye v-else :size="17" />
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-black uppercase tracking-[0.16em] text-slate-500 mb-1.5">Password Baru</label>
+                    <div class="relative">
+                      <input v-model="newPassword" :type="showNewPassword ? 'text' : 'password'" autocomplete="new-password" placeholder="Password baru" class="w-full px-4 pr-11 py-2.5 bg-emerald-50/40 border border-emerald-100 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 focus:bg-white outline-none" />
+                      <button type="button" :aria-label="showNewPassword ? 'Sembunyikan password baru' : 'Tampilkan password baru'" @click="showNewPassword = !showNewPassword" class="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-emerald-600 transition cursor-pointer">
+                        <EyeOff v-if="showNewPassword" :size="17" />
+                        <Eye v-else :size="17" />
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-black uppercase tracking-[0.16em] text-slate-500 mb-1.5">Konfirmasi Password</label>
+                    <div class="relative">
+                      <input v-model="confirmPassword" :type="showConfirmPassword ? 'text' : 'password'" autocomplete="new-password" placeholder="Ulangi password baru" class="w-full px-4 pr-11 py-2.5 bg-emerald-50/40 border border-emerald-100 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 focus:bg-white outline-none" />
+                      <button type="button" :aria-label="showConfirmPassword ? 'Sembunyikan konfirmasi password' : 'Tampilkan konfirmasi password'" @click="showConfirmPassword = !showConfirmPassword" class="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-emerald-600 transition cursor-pointer">
+                        <EyeOff v-if="showConfirmPassword" :size="17" />
+                        <Eye v-else :size="17" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
-
+                
+                <!-- 
                 <div class="md:col-span-2">
                   <label class="block text-[11px] font-black uppercase tracking-[0.16em] text-slate-500 mb-1.5">Role</label>
                   <input v-model="user.role" type="text" disabled class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-500" />
-                </div>
+                </div> -->
               </div>
             </div>
 

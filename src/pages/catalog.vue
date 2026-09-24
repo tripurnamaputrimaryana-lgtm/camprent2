@@ -4,7 +4,7 @@ import { useRouter, useRoute } from 'vue-router';
 import API from '../utils/axios';
 import Navbar from '../components/navbar.vue';
 import Footer from '../components/footer.vue';
-import { ShoppingBag, CheckCircle2, XCircle, Search, Filter, ShoppingCart } from 'lucide-vue-next';
+import { ShoppingBag, CheckCircle2, XCircle, Search, Filter, ShoppingCart, Eye, X } from 'lucide-vue-next';
 import { useCart } from '../utils/cart';
 
 const router = useRouter();
@@ -14,6 +14,8 @@ const categories = ref([]);
 const selectedCategory = ref(route.query.category_id ? String(route.query.category_id) : '');
 const searchQuery = ref('');
 const loading = ref(true);
+const showDetailModal = ref(false);
+const selectedEquipment = ref(null);
 const { addToCart, cartCount } = useCart();
 
 // Ambil data kategori dan peralatan dari API
@@ -80,6 +82,16 @@ const handleRentNow = (item) => {
 };
 
 const openCart = () => router.push('/cart');
+
+const openDetailModal = (item) => {
+  selectedEquipment.value = item;
+  showDetailModal.value = true;
+};
+
+const closeDetailModal = () => {
+  showDetailModal.value = false;
+  selectedEquipment.value = null;
+};
 
 onMounted(() => {
   fetchData();
@@ -206,7 +218,10 @@ onMounted(() => {
               >
                 <div>
                   <!-- Bagian Foto Produk -->
-                  <div class="relative overflow-hidden bg-emerald-50 h-52">
+                  <div
+                    @click="openDetailModal(item)"
+                    class="relative overflow-hidden bg-emerald-50 h-52 cursor-pointer"
+                  >
                     <img
                       :src="getImageUrl(item.image || item.gambar)"
                       :alt="item.name || item.title"
@@ -217,11 +232,16 @@ onMounted(() => {
                     <span class="absolute top-3 left-3 bg-white/90 backdrop-blur-sm text-emerald-800 text-[10px] font-black uppercase tracking-wider px-2.5 py-1.5 rounded-full shadow-sm">
                       CampRent Gear
                     </span>
+                    <span class="absolute inset-0 flex items-center justify-center bg-emerald-950/0 group-hover:bg-emerald-950/20 transition-colors">
+                      <span class="opacity-0 group-hover:opacity-100 bg-white text-emerald-700 px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-lg transition-opacity">
+                        <Eye :size="14" /> Lihat Detail
+                      </span>
+                    </span>
                   </div>
 
                   <!-- Informasi Produk -->
                   <div class="p-5 space-y-2.5">
-                    <h3 class="font-bold text-slate-800 text-sm line-clamp-1">
+                    <h3 @click="openDetailModal(item)" class="font-bold text-slate-800 text-sm line-clamp-1 cursor-pointer hover:text-emerald-700 transition-colors">
                       {{ item.name || item.title }}
                     </h3>
                     
@@ -282,6 +302,60 @@ onMounted(() => {
         </div>
 
       </main>
+    </div>
+
+    <!-- Detail Produk -->
+    <div v-if="showDetailModal && selectedEquipment" class="fixed inset-0 z-50 bg-emerald-950/25 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-white rounded-[2rem] w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl border border-emerald-100 overflow-hidden">
+        <div class="relative h-72 bg-emerald-50 flex items-center justify-center p-3">
+          <img :src="getImageUrl(selectedEquipment.image || selectedEquipment.gambar)" :alt="selectedEquipment.name || selectedEquipment.title" class="w-full h-full object-contain" />
+          <button type="button" @click="closeDetailModal" aria-label="Tutup detail barang" class="absolute right-4 top-4 p-2 rounded-xl bg-white/90 text-slate-600 hover:text-emerald-700 shadow-sm cursor-pointer">
+            <X :size="18" />
+          </button>
+        </div>
+        <div class="p-6 space-y-5">
+          <div>
+            <span class="text-[10px] font-black uppercase tracking-wider text-emerald-700">Detail Peralatan</span>
+            <h2 class="text-xl font-black text-slate-900 mt-1">{{ selectedEquipment.name || selectedEquipment.title }}</h2>
+            <p class="text-xs text-slate-500 mt-1">{{ selectedEquipment.category?.name || 'Peralatan Outdoor' }}</p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div class="bg-emerald-50/70 rounded-xl p-3">
+              <span class="block text-[10px] uppercase font-bold text-slate-400">Harga / Hari</span>
+              <strong class="block text-emerald-700 mt-1">Rp {{ Number(selectedEquipment.price_per_day || selectedEquipment.price || selectedEquipment.harga || 0).toLocaleString('id-ID') }}</strong>
+            </div>
+            <div class="bg-emerald-50/70 rounded-xl p-3">
+              <span class="block text-[10px] uppercase font-bold text-slate-400">Stok</span>
+              <strong class="block text-slate-800 mt-1">{{ selectedEquipment.stock || selectedEquipment.stok || 0 }} unit</strong>
+            </div>
+          </div>
+
+          <div>
+            <h3 class="text-xs font-black uppercase tracking-wider text-emerald-800">Deskripsi</h3>
+            <p class="text-sm text-slate-600 leading-relaxed mt-2">{{ selectedEquipment.description || selectedEquipment.deskripsi || 'Tidak ada deskripsi untuk barang ini.' }}</p>
+          </div>
+
+          <div class="flex gap-2">
+            <button
+              v-if="(selectedEquipment.stock || selectedEquipment.stok || 0) > 0"
+              type="button"
+              @click="handleRentNow(selectedEquipment); closeDetailModal()"
+              class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <ShoppingBag :size="14" /> Sewa Sekarang
+            </button>
+            <button
+              v-if="(selectedEquipment.stock || selectedEquipment.stok || 0) > 0"
+              type="button"
+              @click="handleAddToCart(selectedEquipment); closeDetailModal()"
+              class="flex-1 bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-200 py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <ShoppingCart :size="14" /> Keranjang
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <Footer />
