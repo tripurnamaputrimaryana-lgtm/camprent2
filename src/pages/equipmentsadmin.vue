@@ -85,33 +85,6 @@ const resetForm = () => {
   showModal.value = false;
 };
 
-const handleImageChange = (event) => {
-  const file = event.target.files?.[0];
-  if (!file) return;
-
-  if (!file.type.startsWith('image/')) {
-    showNotification('error', 'File yang dipilih harus berupa gambar.');
-    event.target.value = '';
-    return;
-  }
-
-  if (file.size > 2 * 1024 * 1024) {
-    showNotification('error', 'Ukuran gambar maksimal 2 MB.');
-    event.target.value = '';
-    return;
-  }
-
-  const reader = new FileReader();
-  reader.onload = () => {
-    form.value.image = reader.result;
-  };
-  reader.onerror = () => {
-    showNotification('error', 'Gambar tidak dapat dibaca. Silakan pilih file lain.');
-    event.target.value = '';
-  };
-  reader.readAsDataURL(file);
-};
-
 const openEditModal = (item) => {
   isEditing.value = true;
   currentId.value = item.id;
@@ -462,14 +435,14 @@ onMounted(() => {
           </div>
 
           <div>
-            <label class="text-[11px] font-extrabold uppercase text-slate-500 block mb-1">Foto Alat</label>
+            <label class="text-[11px] font-extrabold uppercase text-slate-500 block mb-1">Link Foto Alat</label>
             <input
-              type="file"
-              accept="image/*"
-              @change="handleImageChange"
-              class="w-full px-3.5 py-2.5 bg-emerald-50/40 border border-emerald-100 rounded-xl text-xs font-semibold file:mr-3 file:border-0 file:bg-emerald-100 file:text-emerald-700 file:px-3 file:py-1.5 file:rounded-lg file:font-bold file:cursor-pointer focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 focus:bg-white outline-none"
+              v-model="form.image"
+              type="url"
+              placeholder="https://contoh.com/foto-alat.jpg"
+              class="w-full px-3.5 py-2.5 bg-emerald-50/40 border border-emerald-100 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 focus:bg-white outline-none"
             />
-            <p class="text-[10px] text-slate-400 mt-1">Pilih gambar JPG, PNG, atau WebP maksimal 2 MB.</p>
+            <p class="text-[10px] text-slate-400 mt-1">Masukkan link langsung menuju gambar alat.</p>
             <img
               v-if="form.image"
               :src="form.image"

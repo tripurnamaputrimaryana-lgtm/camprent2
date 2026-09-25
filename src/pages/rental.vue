@@ -71,7 +71,7 @@ const rentalDays = computed(() => {
   const start = new Date(startDate.value);
   const end = new Date(endDate.value);
   const diffTime = end - start;
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
   return diffDays > 0 ? diffDays : 0;
 });
 
@@ -127,6 +127,7 @@ const payWithMidtrans = async (rental) => {
         successMessage.value = 'Pembayaran berhasil diproses oleh Midtrans.';
       }
       submitting.value = false;
+      router.push('/history');
     },
     onPending: () => {
       successMessage.value = 'Pembayaran sedang diproses oleh Midtrans.';
